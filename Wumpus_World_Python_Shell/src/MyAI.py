@@ -18,24 +18,29 @@
 # ======================================================================
 
 from Agent import Agent
+import random   
 
 class MyAI ( Agent ):
 
     def __init__ ( self ):
-        # ======================================================================
-        # YOUR CODE BEGINS
-        # ======================================================================
-        
         pass
-        # ======================================================================
-        # YOUR CODE ENDS
-        # ======================================================================
 
-    def getAction( self, stench, breeze, glitter, bump, scream ):
-        # ======================================================================
-        # YOUR CODE BEGINS
-        # ======================================================================
+    def getAction( self, stench, breeze, glitter, bump, scream ): # variables = boolean
+        if (stench):
+            return Agent.Action.SHOOT
         
+        if (breeze):
+            pass
+        
+        if glitter:
+            return Agent.Action.GRAB
+        
+        if bump: # if bump into the wall
+            pass 
+        
+        if scream:
+            pass
+
         return Agent.Action.CLIMB
         # ======================================================================
         # YOUR CODE ENDS
