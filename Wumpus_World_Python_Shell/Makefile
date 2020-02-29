@@ -30,7 +30,7 @@ DOC_DIR = doc
 SOURCES = $(foreach s, $(RAW_SOURCES), $(SOURCE_DIR)/$(s))
 
 all: $(SOURCES)
-	@-eval `'/usr/bin/tclsh' '/pkg/modules/modulecmd.tcl' 'bash' load python/3.5.2` ; \
+	@-eval `'/usr/bin/tclsh' '/pkg/modules/modulecmd.tcl' 'bash' load python/3.6.8` ; \
 	 if hash python3 &> /dev/null ; \
 	 then \
 		python3 -m compileall -q src ; \
