@@ -42,20 +42,29 @@ class MyAI ( Agent ):
         self.targetTile = None #ile you want to either move to, or shoot at, should always be adjacent to current square
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
+
     #=============================================================================
+    '''main interfacefor this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
         if findGoldState:
-            return findingGold(stench, breeze, glitter, bump, scream)
+            return findingGoldAction(stench, breeze, glitter, bump, scream)
         if goHomeState:
-            return goHome(stench, breeze, glitter, bump, scream)
+            return goHomeAction(stench, breeze, glitter, bump, scream)
 
     #=============================================================================
     '''main logic pertaining to getting to the gold.''' 
     #=============================================================================
-    def findingGold( self, stench, breeze, glitter, bump, scream ):
+    def findingGoldAction( self, stench, breeze, glitter, bump, scream ):
+        if glitter:  
+            # grab that big gold man 
+            self.knownWorld[self.currentTile].append('glitter')
+            findGoldState = False
+            goHomeState = True
+            self.updateWorld( stench, breeze, bump, scream )
+            return Agent.Action.GRAB
         self.updateWorld( stench, breeze, glitter, bump, scream )
-        self.setTargetTile()d
+        self.setTargetTile()
         return self.moveToTargetTile()
 
     #=============================================================================
@@ -65,7 +74,7 @@ class MyAI ( Agent ):
         THIS IS NOT MECHANICS, USE SMART AI ALGORITHM
     '''
     #=============================================================================
-    def goHome(self, stench, breeze, glitter, bump, scream ):
+    def goHomeAction(self, stench, breeze, glitter, bump, scream ):
         print("GOING HOME MAN")
         if currentTile == (1,1):
             return Agent.Action.CLIMB
@@ -138,23 +147,17 @@ class MyAI ( Agent ):
         THIS IS MECHANICS, NOT AI ALGORITHM
     '''
     #=============================================================================
-    def updateWorld( self, stench, breeze, glitter, bump, scream) :
-        if coord not in self.knownWorld:
+    def updateWorld( self, stench, breeze, bump, scream) :
+        if self.currentTile not in self.knownWorld:
             #initialize to empty list 
             self.knownWorld[self.currentTile] = []
 
-        if stench:
+        if stench and 'stench' not in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].append('stench')
             self.updateWumpusWeights()
-        if breeze:
+        if breeze and 'breeze' not in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].append('breeze')
             self.updatePitWeights()
-        if glitter:  
-            # grab gold
-            self.knownWorld[self.currentTile].append('glitter')
-            findGoldState = False
-            goHome = True
-            return Agent.Action.GRAB
         if bump:
             #edge of map
             if self.targetTile:
@@ -164,11 +167,14 @@ class MyAI ( Agent ):
             # you killled the wumpus? 
             del self.possibleWumpus[self.targetTile] #target tile you shot at no longer a wumpus
             self.knownWorld[self.targetTile] = ['clear'] #target tile is now known, and clear. 
-            pass
-        if not (stench or breeze or glitter or bump):
+        if not (stench or breeze or glitter or bump) and 'clear' not in self.knownWorld[self.currentTile]:
             # nothing
             self.knownWorld[self.currentTile].append('clear')
-            pass
+            if self.currentTile in self.possiblePits:
+                del self.possiblePits[self.currentTile]
+            if self.currentTile in self.possibleWumpus:
+                del self.possibleWumpus
+        return False
     #=============================================================================
     ''' updates the weights of a tile if we think theres a wumpus there
     '''
