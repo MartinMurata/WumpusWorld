@@ -40,7 +40,7 @@ class MyAI ( Agent ):
         self.heuristic = {} # for A* ?????
         self.currentTile = (1,1) #set initial tile
         self.facing = 'right' #set initial direction
-        self.targetTile = None #ile you want to either move to, or shoot at, should always be adjacent to current square
+        self.targetTile = (1,1) #ile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
 
@@ -203,9 +203,8 @@ class MyAI ( Agent ):
             self.updatePitWeights()
         if bump:
             #edge of map
-            if self.targetTile:
-                perimeterTile = self.targetTile #the previus targetTile is now known as perimeter
-                self.knownWorld[perimeterTile].append('perimeter')
+            perimeterTile = self.targetTile #the previus targetTile is now known as perimeter
+            self.knownWorld[perimeterTile].append('perimeter')
         if scream:
             # you killled the wumpus? 
             del self.possibleWumpus[self.targetTile] #target tile you shot at no longer a wumpus
