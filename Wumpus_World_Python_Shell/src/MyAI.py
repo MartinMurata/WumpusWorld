@@ -83,10 +83,47 @@ class MyAI ( Agent ):
         if self.currentTile == (1,1):
             return Agent.Action.CLIMB
         else:
-            pass
-            #implement A*
-            #calc cost+hearustic of adj tiles. the heuristic cost is just the max(x,y).
-            #Cost is determined by distance, but more importantly, what kind of square it is.
+            #updateworld?
+            print('finding best tile.....')
+            self.setlowestScoreTarget()
+            return self.moveToTargetTile()
+
+    #=============================================================================
+    '''scores all adjacent tiles on cost and heuristic. Sets target tile to the adj
+        tile with lowest score. used in A* search
+
+        cost = prob of wumpus + prob of pit
+        heuristic = min(x,y)
+        score = cost + heuristic
+    '''
+    #=============================================================================  
+    def setlowestScoreTarget(self):
+            minScore = 100000
+            adjTiles=[
+                (self.currentTile[0],self.currentTile[1]+1), #right
+                (self.currentTile[0],self.currentTile[1]-1), #left
+                (self.currentTile[0]+1,self.currentTile[1]), #above
+                (self.currentTile[0]-1,self.currentTile[1])  #below
+            ]
+            tempScore = 0
+            tempTile = None
+            for tile in adjTiles:
+                if tile in self.possibleWumpus:
+                    tempScore += self.possibleWumpus[tile]
+                if tile in self.possiblePits:
+                    tempScore += self.possiblePits[tile]
+                if tile in self.knownWorld:
+                    if 'perimeter' in self.knownWorld[tile]:
+                        tempScore += 5
+                # A* heuristic
+                tempScore += min(tile[0],tile[1])
+
+                # reset values if new min
+                if tempScore < minScore:
+                    minScore = tempScore
+                    tempTile = tile
+                tempScore = 0 
+            self.targetTile = tempTile
 
     #=============================================================================
     '''randomly picks unvisited tile. If there is any intelligence in this AI, it should
