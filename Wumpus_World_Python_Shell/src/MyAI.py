@@ -134,6 +134,7 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def setTargetTile(self):
+        if self.currentTile == self.targetTile: #only set new target if we already moved to previous target
         adjTiles=[
             (self.currentTile[0],self.currentTile[1]+1), #right
             (self.currentTile[0],self.currentTile[1]-1), #left
