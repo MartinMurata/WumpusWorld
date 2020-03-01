@@ -83,8 +83,6 @@ class MyAI ( Agent ):
         if self.currentTile == (1,1):
             return Agent.Action.CLIMB
         else:
-            #updateworld?
-            print('finding best tile.....')
             self.setlowestScoreTarget()
             return self.moveToTargetTile()
 
@@ -108,6 +106,8 @@ class MyAI ( Agent ):
             tempScore = 0
             tempTile = None
             for tile in adjTiles:
+                if tile[0] < 1 or tile[1] < 1:
+                    break
                 if tile in self.possibleWumpus:
                     tempScore += self.possibleWumpus[tile]
                 if tile in self.possiblePits:
@@ -135,16 +135,16 @@ class MyAI ( Agent ):
     #=============================================================================
     def setTargetTile(self):
         if self.currentTile == self.targetTile: #only set new target if we already moved to previous target
-        adjTiles=[
-            (self.currentTile[0],self.currentTile[1]+1), #right
-            (self.currentTile[0],self.currentTile[1]-1), #left
-            (self.currentTile[0]+1,self.currentTile[1]), #above
-            (self.currentTile[0]-1,self.currentTile[1])  #below
-        ]
-        while True:
-            self.targetTile = adjTiles[ random.randrange ( len (adjTiles) ) ]
-            if self.targetTile not in self.knownWorld: #might get stuck, what if all surroundings are visited 
-                break
+            adjTiles=[
+                (self.currentTile[0],self.currentTile[1]+1), #right
+                (self.currentTile[0],self.currentTile[1]-1), #left
+                (self.currentTile[0]+1,self.currentTile[1]), #above
+                (self.currentTile[0]-1,self.currentTile[1])  #below
+            ]
+            while True:
+                self.targetTile = adjTiles[ random.randrange ( len (adjTiles) ) ]
+                if self.targetTile not in self.knownWorld and self.targetTile[0] > 0 and self.targetTile[1] > 0: #might get stuck, what if all surroundings are visited 
+                    break
 
     #=============================================================================
     '''returns the action to move to next tile. Only turns in the left direction (can be optimized later).
@@ -180,6 +180,7 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_LEFT
             else:
                 self.facing = 'left'
+        print(f'current tile: {self.currentTile} target tile: {self.targetTile}')
         self.currentTile = self.targetTile
         return Agent.Action.FORWARD
 
