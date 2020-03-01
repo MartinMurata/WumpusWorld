@@ -29,7 +29,7 @@ BUGS:
 - when setting the target tile, it only considers tiles you haven't visited yet, but what if you are surrounded by all visted tiles?
 '''
 from Agent import Agent
-
+import random
 class MyAI ( Agent ):
     #=============================================================================
     #=============================================================================
@@ -37,6 +37,7 @@ class MyAI ( Agent ):
         self.knownWorld = {} #(coordinate:sensors) map of visited tiles
         self.possiblePits = {} #(coordinate:weight)
         self.possibleWumpus = {} #(coordinate:weight)
+        self.heuristic = {} # for A* ?????
         self.currentTile = (1,1) #set initial tile
         self.facing = 'right' #set initial direction
         self.targetTile = None #ile you want to either move to, or shoot at, should always be adjacent to current square
@@ -47,10 +48,10 @@ class MyAI ( Agent ):
     '''main interfacefor this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
-        if findGoldState:
-            return findingGoldAction(stench, breeze, glitter, bump, scream)
-        if goHomeState:
-            return goHomeAction(stench, breeze, glitter, bump, scream)
+        if self.findGoldState:
+            return self.findingGoldAction(stench, breeze, glitter, bump, scream)
+        if self.goHomeState:
+            return self.goHomeAction(stench, breeze, glitter, bump, scream)
 
     #=============================================================================
     '''main logic pertaining to getting to the gold.''' 
@@ -58,12 +59,15 @@ class MyAI ( Agent ):
     def findingGoldAction( self, stench, breeze, glitter, bump, scream ):
         if glitter:  
             # grab that big gold man 
-            self.knownWorld[self.currentTile].append('glitter')
-            findGoldState = False
-            goHomeState = True
+            if self.currentTile in self.knownWorld:
+                self.knownWorld[self.currentTile].append('glitter')
+            else:
+                self.knownWorld[self.currentTile] = ['glitter']
+            self.findGoldState = False
+            self.goHomeState = True
             self.updateWorld( stench, breeze, bump, scream )
             return Agent.Action.GRAB
-        self.updateWorld( stench, breeze, glitter, bump, scream )
+        self.updateWorld( stench, breeze, bump, scream )
         self.setTargetTile()
         return self.moveToTargetTile()
 
@@ -76,16 +80,20 @@ class MyAI ( Agent ):
     #=============================================================================
     def goHomeAction(self, stench, breeze, glitter, bump, scream ):
         print("GOING HOME MAN")
-        if currentTile == (1,1):
+        if self.currentTile == (1,1):
             return Agent.Action.CLIMB
         else:
-            #implement 
+            pass
+            #implement A*
+            #calc cost+hearustic of adj tiles. the heuristic cost is just the max(x,y).
+            #Cost is determined by distance, but more importantly, what kind of square it is.
 
     #=============================================================================
     '''randomly picks unvisited tile. If there is any intelligence in this AI, it should
         be done here.....since picking the next tile requires a smart noodle...
         THIS IS NOT MECHANICS, USE SMART AI ALGORITHM
         use the weights for the pits and wumpus you made 
+        probs want to make the possibleWumpus/Pit map into a priority queue, most probable tile at the top
     '''
     #=============================================================================
     def setTargetTile(self):
@@ -113,7 +121,6 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_LEFT
             else:
                 self.facing = 'up'
-                break
         # next tile is below
         if self.targetTile[0] < self.currentTile[0]:
             #face the correct way first 
@@ -121,7 +128,6 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_LEFT
             else:
                 self.facing = 'down'
-                break
         # next tile is right 
         if self.targetTile[1] > self.currentTile[1]:
             #face the correct way first 
@@ -129,7 +135,6 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_LEFT
             else:
                 self.facing = 'right'
-                break
         # next tile is left
         if self.targetTile[1] < self.currentTile[1]:
             #face the correct way first 
@@ -137,7 +142,6 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_LEFT
             else:
                 self.facing = 'left'
-                break
         self.currentTile = self.targetTile
         return Agent.Action.FORWARD
 
@@ -167,19 +171,19 @@ class MyAI ( Agent ):
             # you killled the wumpus? 
             del self.possibleWumpus[self.targetTile] #target tile you shot at no longer a wumpus
             self.knownWorld[self.targetTile] = ['clear'] #target tile is now known, and clear. 
-        if not (stench or breeze or glitter or bump) and 'clear' not in self.knownWorld[self.currentTile]:
+        if not (stench or breeze or bump) and 'clear' not in self.knownWorld[self.currentTile]:
             # nothing
             self.knownWorld[self.currentTile].append('clear')
             if self.currentTile in self.possiblePits:
                 del self.possiblePits[self.currentTile]
-            if self.currentTile in self.possibleWumpus:
+            if self.currentTile in self.possibleWumpus.keys():
                 del self.possibleWumpus
-        return False
+
     #=============================================================================
     ''' updates the weights of a tile if we think theres a wumpus there
     '''
     #=============================================================================
-    def updateWumpusWeights():
+    def updateWumpusWeights(self):
         adjTiles=[
             (self.currentTile[0],self.currentTile[1]+1), #right
             (self.currentTile[0],self.currentTile[1]-1), #left
@@ -188,7 +192,7 @@ class MyAI ( Agent ):
         ]
         for tile in adjTiles:
             if tile not in self.knownWorld:
-                if tile not in self.possibleWumpus:
+                if tile not in self.possibleWumpus.keys():
                     self.possibleWumpus[tile] = 1
                 else:
                     self.possibleWumpus[tile]+=1
@@ -198,7 +202,7 @@ class MyAI ( Agent ):
     ''' updates the weights of a tile if we think theres a pit there
     '''
     #=============================================================================
-    def updatePitWeights():
+    def updatePitWeights(self):
         adjTiles=[
             (self.currentTile[0],self.currentTile[1]+1), #right
             (self.currentTile[0],self.currentTile[1]-1), #left
