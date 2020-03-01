@@ -48,6 +48,7 @@ class MyAI ( Agent ):
     '''main interfacefor this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
+        self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             return self.findingGoldAction(stench, breeze, glitter, bump, scream)
         if self.goHomeState:
@@ -65,9 +66,8 @@ class MyAI ( Agent ):
                 self.knownWorld[self.currentTile] = ['glitter']
             self.findGoldState = False
             self.goHomeState = True
-            self.updateWorld( stench, breeze, bump, scream )
             return Agent.Action.GRAB
-        self.updateWorld( stench, breeze, bump, scream )
+        
         self.setTargetTile()
         return self.moveToTargetTile()
 
