@@ -38,14 +38,14 @@ class MyAI ( Agent ):
         self.possiblePits = {} #(coordinate:weight) tuple:integer
         self.possibleWumpus = {} #(coordinate:weight)
         self.heuristic = {} # for A* ?????
-        self.currentTile = (1,1) #set initial tile
+        self.currentTile = (0,0) # set initial tile
         self.facing = 'right' #set initial direction
-        self.targetTile = (1,1) #ile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
+        self.targetTile = (0,0) #tile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
 
     #=============================================================================
-    '''main interfacefor this class'''
+    '''main interface for this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
         self.updateWorld( stench, breeze, bump, scream )
@@ -60,6 +60,7 @@ class MyAI ( Agent ):
     def findingGoldAction( self, stench, breeze, glitter, bump, scream ):
         if glitter:  
             # grab that big gold man 
+            print ("Get the Gold!")
             if self.currentTile in self.knownWorld:
                 self.knownWorld[self.currentTile].append('glitter')
             else:
@@ -80,7 +81,8 @@ class MyAI ( Agent ):
     #=============================================================================
     def goHomeAction(self, stench, breeze, glitter, bump, scream ):
         print("GOING HOME MAN")
-        if self.currentTile == (1,1):
+        if self.currentTile == (0,0):
+            print("already at home")
             return Agent.Action.CLIMB
         else:
             self.setlowestScoreTarget()
@@ -113,10 +115,10 @@ class MyAI ( Agent ):
                 if tile in self.possiblePits:
                     tempScore += self.possiblePits[tile]
                 if tile in self.knownWorld:
-                    if 'perimeter' in self.knownWorld[tile]:
+                    if 'wall' in self.knownWorld[tile]:
                         tempScore += 5
                 # A* heuristic
-                tempScore += min(tile[0],tile[1])
+                tempScore += max(tile[0],tile[1])
 
                 # reset values if new min
                 if tempScore < minScore:
@@ -145,24 +147,24 @@ class MyAI ( Agent ):
             tempScore = 0
             tempTile = None
             for tile in adjTiles:
-                if tile[0] < 1 or tile[1] < 1:
+                if tile[0] < 0 or tile[1] < 0:
                     break
                 if tile in self.possibleWumpus:
                     tempScore += self.possibleWumpus[tile]
                 if tile in self.possiblePits:
                     tempScore += self.possiblePits[tile]
                 if tile in self.knownWorld:
-                    if 'perimeter' in self.knownWorld[tile]:
+                    if 'wall' in self.knownWorld[tile]:
                         tempScore += 5
 
                 # reset values if new min
-                if tempScore < minScore and self.targetTile[0] > 0 and self.targetTile[1] > 0:
+                if tempScore < minScore and self.targetTile[0] >= 0 and self.targetTile[1] >= 0:
                     minScore = tempScore
                     tempTile = tile
                 tempScore = 0  
             self.targetTile = tempTile
             print(f'target is now {self.targetTile}')
-            input( )
+            #input( )
 
 
     #=============================================================================
@@ -220,6 +222,7 @@ class MyAI ( Agent ):
         if breeze and 'breeze' not in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].append('breeze')
             self.updatePitWeights()
+        '''which is tile marked as the wall'''
         if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
             #edge of map
             if self.facing == 'right':
