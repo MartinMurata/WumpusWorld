@@ -34,8 +34,8 @@ class MyAI ( Agent ):
     #=============================================================================
     #=============================================================================
     def __init__ ( self ):
-        self.knownWorld = {} #(coordinate:sensors) map of visited tiles
-        self.possiblePits = {} #(coordinate:weight)
+        self.knownWorld = {} #(coordinate:sensors) map of visited tiles (tuple:list)
+        self.possiblePits = {} #(coordinate:weight) tuple:integer
         self.possibleWumpus = {} #(coordinate:weight)
         self.heuristic = {} # for A* ?????
         self.currentTile = (1,1) #set initial tile
@@ -122,7 +122,7 @@ class MyAI ( Agent ):
                 if tempScore < minScore:
                     minScore = tempScore
                     tempTile = tile
-                tempScore = 0 
+                tempScore = 0  
             self.targetTile = tempTile
 
     #=============================================================================
@@ -135,16 +135,35 @@ class MyAI ( Agent ):
     #=============================================================================
     def setTargetTile(self):
         if self.currentTile == self.targetTile: #only set new target if we already moved to previous target
+            minScore = 100000
             adjTiles=[
                 (self.currentTile[0],self.currentTile[1]+1), #right
                 (self.currentTile[0],self.currentTile[1]-1), #left
                 (self.currentTile[0]+1,self.currentTile[1]), #above
                 (self.currentTile[0]-1,self.currentTile[1])  #below
             ]
-            while True:
-                self.targetTile = adjTiles[ random.randrange ( len (adjTiles) ) ]
-                if self.targetTile not in self.knownWorld and self.targetTile[0] > 0 and self.targetTile[1] > 0: #might get stuck, what if all surroundings are visited 
+            tempScore = 0
+            tempTile = None
+            for tile in adjTiles:
+                if tile[0] < 1 or tile[1] < 1:
                     break
+                if tile in self.possibleWumpus:
+                    tempScore += self.possibleWumpus[tile]
+                if tile in self.possiblePits:
+                    tempScore += self.possiblePits[tile]
+                if tile in self.knownWorld:
+                    if 'perimeter' in self.knownWorld[tile]:
+                        tempScore += 5
+
+                # reset values if new min
+                if tempScore < minScore and self.targetTile[0] > 0 and self.targetTile[1] > 0:
+                    minScore = tempScore
+                    tempTile = tile
+                tempScore = 0  
+            self.targetTile = tempTile
+            print(f'target is now {self.targetTile}')
+            input( )
+
 
     #=============================================================================
     '''returns the action to move to next tile. Only turns in the left direction (can be optimized later).
