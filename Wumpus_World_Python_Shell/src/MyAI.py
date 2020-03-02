@@ -28,8 +28,15 @@ QUESTIONS:
 BUGS:
 - when setting the target tile, it only considers tiles you haven't visited yet, but what if you are surrounded by all visted tiles?
 '''
+
+'''this is a method that helps visualize the map'''
+
+import printWord
 from Agent import Agent
 import random
+
+printWord.printWorld("/home/hsuth/CS171/WumpusWorld/Wumpus_World_World_Generator/Worlds/world_0.txt")
+
 class MyAI ( Agent ):
     #=============================================================================
     #=============================================================================
@@ -48,6 +55,14 @@ class MyAI ( Agent ):
     '''main interface for this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
+
+        print("the current tile has", self.currentTile)
+        print("stench", stench)
+        print("breeze", breeze)
+        print("glitter", glitter)
+        print("bump", bump)
+        print("scream", scream)
+        
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             return self.findingGoldAction(glitter)
@@ -153,7 +168,6 @@ class MyAI ( Agent ):
             tempTile = None
             for tile in adjTiles:
                 if tile[0] < 0 or tile[1] < 0:
-                    print("the tile", tile, "is skipped")
                     continue
                 if tile in self.possibleWumpus:
                     tempScore += self.possibleWumpus[tile]
@@ -287,7 +301,6 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def updateWorld( self, stench, breeze, bump, scream) :
-        print("the current tile before updating the world", self.currentTile)
         if self.currentTile not in self.knownWorld:
             #initialize to empty list 
             self.knownWorld[self.currentTile] = []
@@ -308,6 +321,8 @@ class MyAI ( Agent ):
             if self.facing == 'right':
                 perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
             self.knownWorld[perimeterTile].append('wall')
+        
+        '''
         if scream:
             print("might kill the wumpus")
             # you killled the wumpus? 
@@ -320,6 +335,7 @@ class MyAI ( Agent ):
                 del self.possiblePits[self.currentTile]
             if self.currentTile in self.possibleWumpus.keys():
                 del self.possibleWumpus[self.currentTile]
+        '''
 
     #=============================================================================
     ''' updates the weights of a tile if we think theres a wumpus there
