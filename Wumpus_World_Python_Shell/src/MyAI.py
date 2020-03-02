@@ -34,13 +34,13 @@ class MyAI ( Agent ):
     #=============================================================================
     #=============================================================================
     def __init__ ( self ):
-        self.knownWorld = {} #(coordinate:sensors) map of visited tiles
-        self.possiblePits = {} #(coordinate:weight)
+        self.knownWorld = {} #(coordinate:sensors) map of visited tiles (tuple:list)
+        self.possiblePits = {} #(coordinate:weight) tuple:integer
         self.possibleWumpus = {} #(coordinate:weight)
         self.heuristic = {} # for A* ?????
         self.currentTile = (1,1) #set initial tile
         self.facing = 'right' #set initial direction
-        self.targetTile = None #ile you want to either move to, or shoot at, should always be adjacent to current square
+        self.targetTile = (1,1) #ile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
 
@@ -48,6 +48,7 @@ class MyAI ( Agent ):
     '''main interfacefor this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
+        self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             return self.findingGoldAction(stench, breeze, glitter, bump, scream)
         if self.goHomeState:
@@ -65,9 +66,8 @@ class MyAI ( Agent ):
                 self.knownWorld[self.currentTile] = ['glitter']
             self.findGoldState = False
             self.goHomeState = True
-            self.updateWorld( stench, breeze, bump, scream )
             return Agent.Action.GRAB
-        self.updateWorld( stench, breeze, bump, scream )
+        
         self.setTargetTile()
         return self.moveToTargetTile()
 
@@ -83,8 +83,6 @@ class MyAI ( Agent ):
         if self.currentTile == (1,1):
             return Agent.Action.CLIMB
         else:
-            #updateworld?
-            print('finding best tile.....')
             self.setlowestScoreTarget()
             return self.moveToTargetTile()
 
@@ -92,9 +90,9 @@ class MyAI ( Agent ):
     '''scores all adjacent tiles on cost and heuristic. Sets target tile to the adj
         tile with lowest score. used in A* search
 
-        cost = prob of wumpus + prob of pit
-        heuristic = min(x,y)
-        score = cost + heuristic
+        G(n) cost = prob of wumpus + prob of pit
+        H(n) heuristic = min(x-coord,y-coord)
+        F(n) score = cost + heuristic
     '''
     #=============================================================================  
     def setlowestScoreTarget(self):
@@ -108,6 +106,8 @@ class MyAI ( Agent ):
             tempScore = 0
             tempTile = None
             for tile in adjTiles:
+                if tile[0] < 1 or tile[1] < 1:
+                    break
                 if tile in self.possibleWumpus:
                     tempScore += self.possibleWumpus[tile]
                 if tile in self.possiblePits:
@@ -122,7 +122,7 @@ class MyAI ( Agent ):
                 if tempScore < minScore:
                     minScore = tempScore
                     tempTile = tile
-                tempScore = 0 
+                tempScore = 0  
             self.targetTile = tempTile
 
     #=============================================================================
@@ -134,16 +134,36 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def setTargetTile(self):
-        adjTiles=[
-            (self.currentTile[0],self.currentTile[1]+1), #right
-            (self.currentTile[0],self.currentTile[1]-1), #left
-            (self.currentTile[0]+1,self.currentTile[1]), #above
-            (self.currentTile[0]-1,self.currentTile[1])  #below
-        ]
-        while True:
-            self.targetTile = adjTiles[ random.randrange ( len (adjTiles) ) ]
-            if self.targetTile not in self.knownWorld: #might get stuck, what if all surroundings are visited 
-                break
+        if self.currentTile == self.targetTile: #only set new target if we already moved to previous target
+            minScore = 100000
+            adjTiles=[
+                (self.currentTile[0],self.currentTile[1]+1), #right
+                (self.currentTile[0],self.currentTile[1]-1), #left
+                (self.currentTile[0]+1,self.currentTile[1]), #above
+                (self.currentTile[0]-1,self.currentTile[1])  #below
+            ]
+            tempScore = 0
+            tempTile = None
+            for tile in adjTiles:
+                if tile[0] < 1 or tile[1] < 1:
+                    break
+                if tile in self.possibleWumpus:
+                    tempScore += self.possibleWumpus[tile]
+                if tile in self.possiblePits:
+                    tempScore += self.possiblePits[tile]
+                if tile in self.knownWorld:
+                    if 'perimeter' in self.knownWorld[tile]:
+                        tempScore += 5
+
+                # reset values if new min
+                if tempScore < minScore and self.targetTile[0] > 0 and self.targetTile[1] > 0:
+                    minScore = tempScore
+                    tempTile = tile
+                tempScore = 0  
+            self.targetTile = tempTile
+            print(f'target is now {self.targetTile}')
+            input( )
+
 
     #=============================================================================
     '''returns the action to move to next tile. Only turns in the left direction (can be optimized later).
@@ -179,6 +199,7 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_LEFT
             else:
                 self.facing = 'left'
+        print(f'current tile: {self.currentTile} target tile: {self.targetTile}')
         self.currentTile = self.targetTile
         return Agent.Action.FORWARD
 
@@ -199,22 +220,26 @@ class MyAI ( Agent ):
         if breeze and 'breeze' not in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].append('breeze')
             self.updatePitWeights()
-        if bump:
+        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
             #edge of map
-            if self.targetTile:
-                perimeterTile = self.targetTile #the previus targetTile is now known as perimeter
-                self.knownWorld[perimeterTile].append('perimeter')
+            if self.facing == 'right':
+                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            if self.facing == 'right':
+                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            if self.facing == 'right':
+                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            self.knownWorld[perimeterTile].append('wall')
         if scream:
             # you killled the wumpus? 
-            del self.possibleWumpus[self.targetTile] #target tile you shot at no longer a wumpus
+            del self.possibleWumpus['tile you are facing'] #target tile you shot at no longer a wumpus
+            # go through dict coordinates in a straight line and see if they are possible wumpus'
             self.knownWorld[self.targetTile] = ['clear'] #target tile is now known, and clear. 
         if not (stench or breeze or bump) and 'clear' not in self.knownWorld[self.currentTile]:
-            # nothing
             self.knownWorld[self.currentTile].append('clear')
             if self.currentTile in self.possiblePits:
                 del self.possiblePits[self.currentTile]
             if self.currentTile in self.possibleWumpus.keys():
-                del self.possibleWumpus
+                del self.possibleWumpus[self.currentTile]
 
     #=============================================================================
     ''' updates the weights of a tile if we think theres a wumpus there
