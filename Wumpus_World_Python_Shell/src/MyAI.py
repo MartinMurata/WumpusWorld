@@ -90,9 +90,9 @@ class MyAI ( Agent ):
     '''scores all adjacent tiles on cost and heuristic. Sets target tile to the adj
         tile with lowest score. used in A* search
 
-        cost = prob of wumpus + prob of pit
-        heuristic = min(x,y)
-        score = cost + heuristic
+        G(n) cost = prob of wumpus + prob of pit
+        H(n) heuristic = min(x-coord,y-coord)
+        F(n) score = cost + heuristic
     '''
     #=============================================================================  
     def setlowestScoreTarget(self):
@@ -201,21 +201,26 @@ class MyAI ( Agent ):
         if breeze and 'breeze' not in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].append('breeze')
             self.updatePitWeights()
-        if bump:
+        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
             #edge of map
-            perimeterTile = self.targetTile #the previus targetTile is now known as perimeter
-            self.knownWorld[perimeterTile].append('perimeter')
+            if self.facing == 'right':
+                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            if self.facing == 'right':
+                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            if self.facing == 'right':
+                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            self.knownWorld[perimeterTile].append('wall')
         if scream:
             # you killled the wumpus? 
-            del self.possibleWumpus[self.targetTile] #target tile you shot at no longer a wumpus
+            del self.possibleWumpus['tile you are facing'] #target tile you shot at no longer a wumpus
+            # go through dict coordinates in a straight line and see if they are possible wumpus'
             self.knownWorld[self.targetTile] = ['clear'] #target tile is now known, and clear. 
         if not (stench or breeze or bump) and 'clear' not in self.knownWorld[self.currentTile]:
-            # nothing
             self.knownWorld[self.currentTile].append('clear')
             if self.currentTile in self.possiblePits:
                 del self.possiblePits[self.currentTile]
             if self.currentTile in self.possibleWumpus.keys():
-                del self.possibleWumpus
+                del self.possibleWumpus[self.currentTile]
 
     #=============================================================================
     ''' updates the weights of a tile if we think theres a wumpus there
