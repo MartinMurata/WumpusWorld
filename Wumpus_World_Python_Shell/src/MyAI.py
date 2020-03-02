@@ -50,17 +50,17 @@ class MyAI ( Agent ):
     def getAction( self, stench, breeze, glitter, bump, scream ):
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
-            return self.findingGoldAction(stench, breeze, glitter, bump, scream)
+            return self.findingGoldAction(glitter)
         if self.goHomeState:
             return self.goHomeAction(stench, breeze, glitter, bump, scream)
 
     #=============================================================================
     '''main logic pertaining to getting to the gold.''' 
     #=============================================================================
-    def findingGoldAction( self, stench, breeze, glitter, bump, scream ):
+    def findingGoldAction( self, glitter):
         if glitter:  
             # grab that big gold man 
-            print ("Get the Gold!")
+            print ("Find the Gold!")
             if self.currentTile in self.knownWorld:
                 self.knownWorld[self.currentTile].append('glitter')
             else:
@@ -135,20 +135,26 @@ class MyAI ( Agent ):
         probs want to make the possibleWumpus/Pit map into a priority queue, most probable tile at the top
     '''
     #=============================================================================
-    def setTargetTile(self):
+    def setTargetTile(self): # set the next Target Tile
+        print("the known world is", self.knownWorld)
         if self.currentTile == self.targetTile: #only set new target if we already moved to previous target
             minScore = 100000
             adjTiles=[
-                (self.currentTile[0],self.currentTile[1]+1), #right
-                (self.currentTile[0],self.currentTile[1]-1), #left
-                (self.currentTile[0]+1,self.currentTile[1]), #above
-                (self.currentTile[0]-1,self.currentTile[1])  #below
-            ]
+                (self.currentTile[0],self.currentTile[1]+1), # top
+                (self.currentTile[0],self.currentTile[1]-1), # down
+                (self.currentTile[0]+1,self.currentTile[1]), # right
+                (self.currentTile[0]-1,self.currentTile[1])  # left
+            ] # has to also check if all tiles wall
+
+            #for i in adjTiles:
+             #   print("the adjacent tiles are", i)
+
             tempScore = 0
             tempTile = None
             for tile in adjTiles:
                 if tile[0] < 0 or tile[1] < 0:
-                    break
+                    print("the tile", tile, "is skipped")
+                    continue
                 if tile in self.possibleWumpus:
                     tempScore += self.possibleWumpus[tile]
                 if tile in self.possiblePits:
@@ -173,6 +179,74 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def moveToTargetTile(self):
+        '''update the face and current tile before turning'''
+        if (self.targetTile[0] > self.currentTile[0]) and (self.targetTile[1] == self.currentTile[1]):
+            # if the target tile is on the right of the current tile
+            if self.facing == "right":
+                self.currentTile = self.targetTile
+                return Agent.Action.FORWARD
+            elif self.facing == "down":
+                self.facing = "right" 
+                return Agent.Action.TURN_LEFT
+            elif self.facing == "up":
+                self.facing = "right"
+                return Agent.Action.TURN_RIGHT
+            elif self.facing == "left":
+                # which way doesn't matter, either left, right
+                self.facing = "right"
+                return Agent.Action.TURN_RIGHT
+
+        elif (self.targetTile[0] == self.currentTile[0]) and (self.targetTile[1] > self.currentTile[1]): 
+            # if the target tile is on the top of the current tile
+            if self.facing == "up":
+                self.currentTile = self.targetTile
+                return Agent.Action.FORWARD
+            elif self.facing == "right":
+                self.facing = "up"
+                return Agent.Action.TURN_LEFT
+            elif self.facing == "left":
+                self.facing = "up"
+                return Agent.Action.TURN_RIGHT
+            elif self.facing == "down":
+                # which way doesn't matter, either left, right
+                self.facing = "left"
+                return Agent.Action.TURN_RIGHT
+            
+        elif (self.targetTile[0] < self.currentTile[0]) and (self.targetTile[1] == self.currentTile[1]):
+            # if the target tile is on the left of the current tile
+            if self.facing == "left":
+                self.currentTile = self.targetTile
+                return Agent.Action.FORWARD
+            elif self.facing == "up":
+                self.facing = "left"
+                return Agent.Action.TURN_LEFT
+            elif self.facing == "down":
+                self.facing = "left"
+                return Agent.Action.TURN_RIGHT
+            elif self.facing == "right":
+                # which way doesn't matter, either left, right
+                self.facing = "left"
+                return Agent.Action.TURN_RIGHT
+
+        elif (self.targetTile[0] == self.currentTile[0]) and (self.targetTile[1] < self.currentTile[1]):
+            # if the target tile is on the bottom of the current tile
+            if self.facing == "down":
+                self.currentTile = self.targetTile
+                return Agent.Action.FORWARD
+            elif self.facing == "left":
+                self.facing = "down"
+                return Agent.Action.TURN_LEFT
+            elif self.facing == "right":
+                self.facing = "down"
+                return Agent.Action.TURN_RIGHT
+            elif self.facing == "up":
+                # which way doesn't matter, either left, right
+                self.facing = "left"
+                return Agent.Action.TURN_RIGHT
+
+
+
+        '''
         # next tile is above
         if self.targetTile[0] > self.currentTile[0]:
             #face the correct way first 
@@ -204,6 +278,7 @@ class MyAI ( Agent ):
         print(f'current tile: {self.currentTile} target tile: {self.targetTile}')
         self.currentTile = self.targetTile
         return Agent.Action.FORWARD
+        '''
 
     #=============================================================================
     ''' keeps track of everything agent has seen so far. Saves in a dictionary
@@ -212,6 +287,7 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def updateWorld( self, stench, breeze, bump, scream) :
+        print("the current tile before updating the world", self.currentTile)
         if self.currentTile not in self.knownWorld:
             #initialize to empty list 
             self.knownWorld[self.currentTile] = []
@@ -233,6 +309,7 @@ class MyAI ( Agent ):
                 perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
             self.knownWorld[perimeterTile].append('wall')
         if scream:
+            print("might kill the wumpus")
             # you killled the wumpus? 
             del self.possibleWumpus['tile you are facing'] #target tile you shot at no longer a wumpus
             # go through dict coordinates in a straight line and see if they are possible wumpus'
@@ -250,10 +327,10 @@ class MyAI ( Agent ):
     #=============================================================================
     def updateWumpusWeights(self):
         adjTiles=[
-            (self.currentTile[0],self.currentTile[1]+1), #right
-            (self.currentTile[0],self.currentTile[1]-1), #left
-            (self.currentTile[0]+1,self.currentTile[1]), #above
-            (self.currentTile[0]-1,self.currentTile[1])  #below
+            (self.currentTile[0],self.currentTile[1]+1), #top
+            (self.currentTile[0],self.currentTile[1]-1), #down
+            (self.currentTile[0]+1,self.currentTile[1]), #right
+            (self.currentTile[0]-1,self.currentTile[1])  #left
         ]
         for tile in adjTiles:
             if tile not in self.knownWorld:
@@ -269,10 +346,10 @@ class MyAI ( Agent ):
     #=============================================================================
     def updatePitWeights(self):
         adjTiles=[
-            (self.currentTile[0],self.currentTile[1]+1), #right
-            (self.currentTile[0],self.currentTile[1]-1), #left
-            (self.currentTile[0]+1,self.currentTile[1]), #above
-            (self.currentTile[0]-1,self.currentTile[1])  #below
+            (self.currentTile[0],self.currentTile[1]+1), #top
+            (self.currentTile[0],self.currentTile[1]-1), #down
+            (self.currentTile[0]+1,self.currentTile[1]), #right
+            (self.currentTile[0]-1,self.currentTile[1])  #left
         ]
         for tile in adjTiles:
             if tile not in self.knownWorld:
