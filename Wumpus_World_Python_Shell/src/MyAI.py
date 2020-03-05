@@ -51,8 +51,7 @@ class MyAI ( Agent ):
         self.targetTile = (0,0) #tile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
-        self.walls = set()
-        self.possibleMapSize = 100
+        self.possibleMapSize = (100000,100000)
         self.goHomePath = []
 
     #=============================================================================
@@ -253,6 +252,15 @@ class MyAI ( Agent ):
                 self.facing = "left"
                 return Agent.Action.TURN_RIGHT
 
+
+    def updateWalls(self):
+        if self.facing == "up":
+            self.possibleMapSize[1] = self.currentTile[1]
+            self.currentTile[1]-=1
+        elif self.facing == "right":
+            self.possibleMapSize[0] = self.currentTile[0]
+            self.currentTile[0]-=1
+
                 
     #=============================================================================
     ''' keeps track of everything agent has seen so far. Saves in a dictionary
@@ -266,7 +274,7 @@ class MyAI ( Agent ):
         
         self.goHomePath.append(self.currentTile)
 
-        if stench and 'stench' not in self.knownWorld[self.currentTile] and self.currentTile not in self.walls:
+        if stench and 'stench' not in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].append('stench')
             self.updateWumpusWeights()
         if breeze and 'breeze' not in self.knownWorld[self.currentTile]:
@@ -274,8 +282,12 @@ class MyAI ( Agent ):
             self.updatePitWeights()
         '''which is tile marked as the wall'''
         if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
+            self.updateWalls()
+            self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
             #edge of map
-            self.walls.add(self.currentTile)
+        
+
+            # 
             #if self.currentTile[0] != 0 and self.currentTile[1] != 0:
              #   self.possibleMapSize = max(self.currentTile)
               #  print("The possible map size is now ", self.possibleMapSize)
@@ -286,7 +298,6 @@ class MyAI ( Agent ):
         print("the world looks like, ", self.knownWorld)
         print("the possible wumpus", self.possibleWumpus)
         print("the possible pits", self.possiblePits)
-        print("the walls are ", self.walls)
 
         
         '''
@@ -315,7 +326,7 @@ class MyAI ( Agent ):
             ]
         for tile in adjTiles: # if it's not in the map
             # possibleMapSize 
-            if tile[0] >= 0 and tile[1] >= 0 and tile not in self.walls and tile[0] < self.possibleMapSize and tile[1] < self.possibleMapSize:
+            if tile[0] >= 0 and tile[1] >= 0 and tile[0] < self.possibleMapSize[0] and tile[1] < self.possibleMapSize[1]:
                 adjT.append(tile)
   
         return adjT
