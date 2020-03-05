@@ -29,7 +29,6 @@ BUGS:
 - when setting the target tile, it only considers tiles you haven't visited yet, but what if you are surrounded by all visted tiles?
 '''
 
-'''this is a method that helps visualize the map'''
 
 import printWord
 from Agent import Agent
@@ -45,6 +44,7 @@ class MyAI ( Agent ):
         self.knownWorld = defaultdict(list) #(coordinate:sensors) map of visited tiles (tuple:list)
         self.possiblePits = defaultdict(int) #(coordinate:weight) tuple:integer
         self.possibleWumpus = defaultdict(int) #(coordinate:weight)
+        self.previousTile = (0,0) 
         self.heuristic = {} # for A* ?????
         self.currentTile = (0,0) # set initial tile
         self.facing = 'right' #set initial direction
@@ -276,10 +276,10 @@ class MyAI ( Agent ):
         if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
             #edge of map
             self.walls.add(self.currentTile)
-            if self.currentTile[0] != 0 and self.currentTile[1] != 0:
-                self.possibleMapSize = max(self.currentTile)
-                print("The possible map size is now ", self.possibleMapSize)
-            self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
+            #if self.currentTile[0] != 0 and self.currentTile[1] != 0:
+             #   self.possibleMapSize = max(self.currentTile)
+              #  print("The possible map size is now ", self.possibleMapSize)
+            # self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
             
         
         print()
@@ -314,6 +314,7 @@ class MyAI ( Agent ):
                 (self.currentTile[0]-1,self.currentTile[1])
             ]
         for tile in adjTiles: # if it's not in the map
+            # possibleMapSize 
             if tile[0] >= 0 and tile[1] >= 0 and tile not in self.walls and tile[0] < self.possibleMapSize and tile[1] < self.possibleMapSize:
                 adjT.append(tile)
   
