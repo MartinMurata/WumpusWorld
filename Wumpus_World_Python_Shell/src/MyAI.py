@@ -37,6 +37,7 @@ class MyAI ( Agent ):
         self.knownWorld = {} #(coordinate:sensors) map of visited tiles (tuple:list)
         self.possiblePits = {} #(coordinate:weight) tuple:integer
         self.possibleWumpus = {} #(coordinate:weight)
+        self.walls = {}
         self.heuristic = {} # for A* ?????
         self.currentTile = (0,0) # set initial tile
         self.facing = 'right' #set initial direction
@@ -108,8 +109,8 @@ class MyAI ( Agent ):
             tempScore = 0
             tempTile = None
             for tile in adjTiles:
-                if tile[0] < 1 or tile[1] < 1:
-                    break
+                if tile[0] < 0 or tile[1] < 0:
+                    continue
                 if tile in self.possibleWumpus:
                     tempScore += self.possibleWumpus[tile]
                 if tile in self.possiblePits:
@@ -145,10 +146,6 @@ class MyAI ( Agent ):
                 (self.currentTile[0]+1,self.currentTile[1]), # right
                 (self.currentTile[0]-1,self.currentTile[1])  # left
             ] # has to also check if all tiles wall
-
-            #for i in adjTiles:
-             #   print("the adjacent tiles are", i)
-
             tempScore = 0
             tempTile = None
             for tile in adjTiles:
@@ -159,22 +156,22 @@ class MyAI ( Agent ):
                     tempScore += self.possibleWumpus[tile]
                 if tile in self.possiblePits:
                     tempScore += self.possiblePits[tile]
-                if tile in self.knownWorld:
-                    if 'wall' in self.knownWorld[tile]:
-                        tempScore += 5
+                if tile in self.walls:
+                    tempScore += 5
 
                 # reset values if new min
-                if tempScore < minScore and self.targetTile[0] >= 0 and self.targetTile[1] >= 0:
+                if tempScore < minScore and tile not in self.knownWorld:
                     minScore = tempScore
                     tempTile = tile
                 tempScore = 0  
+            print('target is now ', tempTile)      
             self.targetTile = tempTile
-            print(f'target is now {self.targetTile}')
-            #input( )
+
 
 
     #=============================================================================
     '''returns the action to move to next tile. Only turns in the left direction (can be optimized later).
+        -updates the current tile 
         THIS IS MECHANICS, NOT AI ALGORITHM
     '''
     #=============================================================================
@@ -244,42 +241,6 @@ class MyAI ( Agent ):
                 self.facing = "left"
                 return Agent.Action.TURN_RIGHT
 
-
-
-        '''
-        # next tile is above
-        if self.targetTile[0] > self.currentTile[0]:
-            #face the correct way first 
-            if self.facing != 'up':
-                return Agent.Action.TURN_LEFT
-            else:
-                self.facing = 'up'
-        # next tile is below
-        if self.targetTile[0] < self.currentTile[0]:
-            #face the correct way first 
-            if self.facing != 'down':
-                return Agent.Action.TURN_LEFT
-            else:
-                self.facing = 'down'
-        # next tile is right 
-        if self.targetTile[1] > self.currentTile[1]:
-            #face the correct way first 
-            if self.facing != 'right':
-                return Agent.Action.TURN_LEFT
-            else:
-                self.facing = 'right'
-        # next tile is left
-        if self.targetTile[1] < self.currentTile[1]:
-            #face the correct way first 
-            if self.facing != 'left':
-                return Agent.Action.TURN_LEFT
-            else:
-                self.facing = 'left'
-        print(f'current tile: {self.currentTile} target tile: {self.targetTile}')
-        self.currentTile = self.targetTile
-        return Agent.Action.FORWARD
-        '''
-
     #=============================================================================
     ''' keeps track of everything agent has seen so far. Saves in a dictionary
         as key = coordinate and value = sense
@@ -302,12 +263,14 @@ class MyAI ( Agent ):
         if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
             #edge of map
             if self.facing == 'right':
-                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
-            if self.facing == 'right':
-                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
-            if self.facing == 'right':
-                perimeterTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
-            self.knownWorld[perimeterTile].append('wall')
+                wallTile = (self.currentTile[0]+1,self.currentTile[1]) #just make a list of tuples???
+            if self.facing == 'left':
+                wallTile = (self.currentTile[0]-1,self.currentTile[1]) #just make a list of tuples???
+            if self.facing == 'up':
+                wallTile = (self.currentTile[0],self.currentTile[1]+1) #just make a list of tuples???
+            if self.facing == 'down':
+                wallTile = (self.currentTile[0],self.currentTile[1]-1) #just make a list of tuples???
+            self.walls[wallTile] = ['wall']
         if scream:
             print("might kill the wumpus")
             # you killled the wumpus? 
