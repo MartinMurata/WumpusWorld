@@ -37,17 +37,21 @@ from collections import defaultdict
 from enum import Enum
 
 class Sensor(Enum):
-    STENCH = 1
-    BREEZE = 2
-    GLITTER = 3
-    BUMP = 4
-    SCREAM = 5
-    SAFE = 6 # no pits or wumpus
-    VISITED = 7
-    MAYBE_WUMPUS = 8
-    MAYBE_PITS = 9
-    NO_WUMPUS = 10
-    NO_PITS = 11
+    STENCH = "ST"
+    BREEZE = "BR"
+    GLITTER = "GL"
+    BUMP = "BU"
+    SCREAM = "SCREAM"
+    SAFE = "SA" # no pits or wumpus
+    VISITED = "V"
+    MAYBE_WUMPUS = "MW"
+    MAYBE_PITS = "MP"
+
+class Direction(Enum):
+    RIGHT = "R"
+    LEFT = "L"
+    UP = "U"
+    DOWN = "D"
 
 #printWord.printWorld("/home/hsuth/CS171/WumpusWorld/Wumpus_World_World_Generator/Worlds/world_0.txt")
 
@@ -59,7 +63,7 @@ class MyAI ( Agent ):
         self.previousTile = (0,0) 
         self.heuristic = {} # for A*, after finding the gold
         self.currentTile = (0,0) # set initial tile
-        self.facing = 'right' #set initial direction
+        self.facing = Direction.RIGHT #set initial direction
         self.targetTile = (0,0) #tile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
@@ -69,7 +73,7 @@ class MyAI ( Agent ):
     '''main interface for this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
-        #self.updateWorld( stench, breeze, bump, scream )
+        self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             return self.findingGoldAction(glitter)
         if self.goHomeState:
@@ -103,9 +107,13 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def goHomeAction(self, stench, breeze, glitter, bump, scream ):
-        print("GOING HOME MAN")
+        print("On the way home")
+
+        if self.currentTile != self.targetTile:
+            return self.moveToTargetTile()
+
         if self.currentTile == (0,0):
-            print("already at home")
+            print("already get back home!")
             return Agent.Action.CLIMB
         else:
             self.setlowestScoreTarget()
@@ -142,20 +150,15 @@ class MyAI ( Agent ):
     #=============================================================================
     def setTargetTile(self): # set the next Target Tile
         #if the current tile has breeze or pit and there's no way to backtrack
-        
-        self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
-
-
-        '''
         if self.allAdjSafe(): # if all adj tiles are safe
             for tile in self.adjTiles():
                 # the safest tile and yet visited
-                if (Sensor.BREEZE and Sensor.STENCH and Sensor.VISITED) not in self.knownWorld[tile]:
+                if (Sensor.MAYBE_WUMPUS and Sensor.MAYBE_PITS and Sensor.VISITED) not in self.knownWorld[tile]:
                     self.targetTile = tile
                     break
                 
                 # second safest and visited
-                elif (Sensor.BREEZE and Sensor.STENCH) not in self.knownWorld[tile] and Sensor.VISITED in self.knownWorld[tile]:
+                elif (Sensor.MAYBE_WUMPUS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile] and Sensor.VISITED in self.knownWorld[tile]:
                     self.targetTile = tile
                     break
                 # randomly picked one
@@ -165,15 +168,16 @@ class MyAI ( Agent ):
         # if not all tiles are safe       
         else:
             for tile in self.adjTiles():
-                # pick the one that's safe
-                if (Sensor.SAFE) in self.knownWorld[tile] and (Sensor.BREEZE or Sensor.STENCH) in self.knownWorld[tile]:
+                # pick the one that's safe and not visited yet, explore the world
+                if Sensor.SAFE in self.knownWorld[tile] and Sensor.VISITED not in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS or Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
+                        self.targetTile = tile
+                        break
+
+                elif (Sensor.SAFE or Sensor.VISITED) in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS or Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
                         self.targetTile = tile
                         break
                 else:
                     self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
-        '''
-
-    
 
     #=============================================================================
     '''returns the action to move to next tile. Only turns in the left direction (can be optimized later).
@@ -189,97 +193,92 @@ class MyAI ( Agent ):
         print()
 
         if (self.targetTile[0] > self.currentTile[0]) and (self.targetTile[1] == self.currentTile[1]):
-
             print("the target is on the right")
             # if the target tile is on the right of the current tile
-            if self.facing == "right":
+            if self.facing == Direction.RIGHT:
                 self.currentTile = self.targetTile
                 return Agent.Action.FORWARD
 
-            elif self.facing == "down":
-                self.facing = "right" 
+            elif self.facing == Direction.DOWN:
+                self.facing = Direction.RIGHT
                 return Agent.Action.TURN_LEFT
 
-            elif self.facing == "up":
-                self.facing = "right"
+            elif self.facing == Direction.UP:
+                self.facing = Direction.RIGHT
                 return Agent.Action.TURN_RIGHT
 
-            elif self.facing == "left": # facing the opposite way
+            elif self.facing == Direction.LEFT: # facing the opposite way
                 # need to face up
-                self.facing = "up"
+                self.facing = Direction.UP
                 return Agent.Action.TURN_RIGHT
 
         elif (self.targetTile[0] == self.currentTile[0]) and (self.targetTile[1] > self.currentTile[1]): 
             # if the target tile is on the top of the current tile
-
             print("the target is on the top")
-            if self.facing == "up":
+            if self.facing == Direction.UP:
                 self.currentTile = self.targetTile
                 return Agent.Action.FORWARD
 
-            elif self.facing == "right":
-                self.facing = "up"
+            elif self.facing == Direction.RIGHT:
+                self.facing = Direction.UP
                 return Agent.Action.TURN_LEFT
 
-            elif self.facing == "left":
-                self.facing = "up"
+            elif self.facing == Direction.LEFT:
+                self.facing = Direction.UP
                 return Agent.Action.TURN_RIGHT
 
-            elif self.facing == "down":
+            elif self.facing == Direction.DOWN:
                 # need to face left first
-                self.facing = "left"
+                self.facing = Direction.LEFT
                 return Agent.Action.TURN_RIGHT
             
         elif (self.targetTile[0] < self.currentTile[0]) and (self.targetTile[1] == self.currentTile[1]):
             # if the target tile is on the left of the current tile
-
             print("the target is on the left")
-            if self.facing == "left":
+            if self.facing == Direction.LEFT:
                 self.currentTile = self.targetTile
 
                 return Agent.Action.FORWARD
-            elif self.facing == "up":
-                self.facing = "left"
+            elif self.facing == Direction.UP:
+                self.facing = Direction.LEFT
                 return Agent.Action.TURN_LEFT
 
-            elif self.facing == "down":
-                self.facing = "left"
+            elif self.facing == Direction.DOWN:
+                self.facing = Direction.LEFT
                 return Agent.Action.TURN_RIGHT
 
-            elif self.facing == "right":
+            elif self.facing == Direction.RIGHT:
                 # neet to face right first
-                self.facing = "down"
+                self.facing = Direction.DOWN
                 return Agent.Action.TURN_RIGHT
 
         elif (self.targetTile[0] == self.currentTile[0]) and (self.targetTile[1] < self.currentTile[1]):
             # if the target tile is on the bottom of the current tile
-
             print("the target is on the bottom")
-
-            if self.facing == "down":
+            if self.facing == Direction.DOWN:
                 self.currentTile = self.targetTile
                 return Agent.Action.FORWARD
 
-            elif self.facing == "left":
-                self.facing = "down"
+            elif self.facing == Direction.LEFT:
+                self.facing = Direction.DOWN
                 return Agent.Action.TURN_LEFT
 
-            elif self.facing == "right":
-                self.facing = "down"
+            elif self.facing == Direction.RIGHT:
+                self.facing = Direction.DOWN
                 return Agent.Action.TURN_RIGHT
 
-            elif self.facing == "up":
+            elif self.facing == Direction.UP:
                 # which way doesn't matter, either left, right
-                self.facing = "right"
+                self.facing = Direction.RIGHT
                 return Agent.Action.TURN_RIGHT
 
 
     def updateWalls(self):
-        if self.facing == "up":
+        if self.facing == Direction.UP:
             self.possibleMapSize[1] = self.currentTile[1]
             print("now knows the bound of the row: ", self.possibleMapSize[1])
             #self.currentTile[1] = self.currentTile[1]-1 # backtrack here
-        elif self.facing == "right":
+        elif self.facing == Direction.RIGHT:
             self.possibleMapSize[0] = self.currentTile[0]
             print("now knows the bound of the col: ", self.possibleMapSize[0])
             #elf.currentTile[0] = self.currentTile[0] - 1
@@ -291,68 +290,64 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def updateWorld( self, stench, breeze, bump, scream):
+        '''which is tile marked as the wall'''
+        
+        # if there is no wumpus or pits (the agent didn't die)
+        self.knownWorld[self.currentTile].add(Sensor.SAFE)
+        self.knownWorld[self.currentTile].add(Sensor.VISITED)
+
+        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
+            self.updateWalls()
+            '''set another Target'''
+            self.setTargetTile()
+            return self.moveToTargetTile()
+
         if (not stench and not breeze):
             self.knownWorld[self.currentTile].add(Sensor.SAFE)
             for tile in self.adjTiles():
                 self.knownWorld[tile].add(Sensor.SAFE)
-
-        if Sensor.VISITED not in self.knownWorld[self.currentTile]:
-            self.knownWorld[self.currentTile].add(Sensor.VISITED)
+                print('a')
 
         if stench:
             self.knownWorld[self.currentTile].add(Sensor.STENCH)
             for tile in self.adjTiles():
                 if Sensor.SAFE not in self.knownWorld[tile]: # if the tile is not marked safe yet
                     self.knownWorld[tile].add(Sensor.MAYBE_WUMPUS) # possible wumpus
+                    print('b')
 
         if breeze:
             self.knownWorld[self.currentTile].add(Sensor.BREEZE)
             for tile in self.adjTiles():
                 if Sensor.SAFE not in self.knownWorld[tile]:
                     self.knownWorld[tile].add(Sensor.MAYBE_PITS) # possible pits
+                    print('c')
 
-        '''which is tile marked as the wall'''
-        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
-            self.updateWalls()
-            '''randomly pick one tile to go'''
-            self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
 
         if not stench and Sensor.MAYBE_WUMPUS in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].discard(Sensor.MAYBE_WUMPUS)
-            self.knownWorld[self.currentTile].add(Sensor.NO_WUMPUS)
-            if not breeze:
-                self.knownWorld[self.currentTile].add(Sensor.SAFE)
+            self.knownWorld[self.currentTile].add(Sensor.SAFE)
+            print('d')
         
         if not breeze and Sensor.MAYBE_PITS in self.knownWorld[self.currentTile]:
             self.knownWorld[self.currentTile].discard(Sensor.MAYBE_PITS)
-            self.knownWorld[self.currentTile].add(Sensor.NO_PITS)
-            if not stench:
-                self.knownWorld[self.currentTile].add(Sensor.SAFE)
+            self.knownWorld[self.currentTile].add(Sensor.SAFE)
+            print('e')
 
-        # if there is no wumpus or pits
-        self.knownWorld[self.currentTile].add(Sensor.SAFE)
-        
 
         # update the whole world again (make sure everything is right here)
         for tile in self.knownWorld:
-            if Sensor.BREEZE in self.knownWorld[tile] and Sensor.SAFE in self.knownWorld[tile]:
-                self.knownWorld[tile].discard(Sensor.BREEZE)
-            if Sensor.STENCH in self.knownWorld[tile] and Sensor.SAFE in self.knownWorld[tile]:
-                self.knownWorld[tile].discard(Sensor.STENCH)
-            if (Sensor.NO_WUMPUS or Sensor.MAYBE_WUMPUS) in self.knownWorld[tile] and Sensor.SAFE in self.knownWorld[tile]:
+            if (Sensor.MAYBE_PITS or Sensor.MAYBE_WUMPUS) in self.knownWorld[tile] and (Sensor.VISITED or Sensor.SAFE) in self.knownWorld[tile]:
                 self.knownWorld[tile].discard(Sensor.MAYBE_WUMPUS)
-                self.knownWorld[tile].discard(Sensor.NO_WUMPUS)
-            if (Sensor.MAYBE_PITS or Sensor.NO_PITS) in self.knownWorld[tile] and Sensor.SAFE in self.knownWorld[tile]:
-                # safe == no pits and no wumpus
                 self.knownWorld[tile].discard(Sensor.MAYBE_PITS)
-                self.knownWorld[tile].discard(Sensor.NO_PITS)
+                print('j')
 
-        print(self.knownWorld)
+            # have to update again here; delete the tile out of bound
+            if (self.possibleMapSize[0] != 100000 and self.possibleMapSize[1] != 100000): # already update before
+                if (tile[0] >= self.possibleMapSize[0] or tile[1] >= self.possibleMapSize[1]):
+                    del self.knownWorld[tile]
         
-        #print()
-        #print("the world looks like, ", self.knownWorld)
-        #print("the possible wumpus", self.possibleWumpus)
-        #print("the possible pits", self.possiblePits)
+        print(self.knownWorld)
+
 
     def adjTiles(self):
         '''return a list of adjTiles'''
