@@ -131,24 +131,24 @@ class MyAI ( Agent ):
 
     def goHomeTile(self):
         for tile in self.adjTiles():
-            if Sensor.VISITED in self.knownWorld[tile]:
+            if Sensor.VISITED in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
                 print("this tile is visited, so it's safe to go from here")
                 self.targetTile = tile
                 break
-            elif (Sensor.VISITED or Sensor.SAFE) in self.knownWorld[tile]:
+            elif (Sensor.VISITED or Sensor.SAFE) in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
                 print("this tile is visited, so it's safe to go from here")
                 self.targetTile = tile
                 break
 
-            elif (Sensor.MAYBE_PITS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
+            elif (Sensor.MAYBE_PITS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
                 self.targetTile = tile
                 break
 
-            elif Sensor.MAYBE_PITS not in self.knownWorld[tile]:
+            elif Sensor.MAYBE_PITS not in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
                 self.targetTile = tile
                 break
 
-            elif Sensor.MAYBE_WUMPUS not in self.knownWorld[tile]:
+            elif Sensor.MAYBE_WUMPUS not in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
                 self.targetTile = tile
                 break
 
