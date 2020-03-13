@@ -159,9 +159,7 @@ class MyAI ( Agent ):
         # print(f'ADJ SCORES {sorted_scores}')
         # input()
         self.targetTile = sorted_scores[0][0]
-    # if you sense two breezes diagonal from each other, pit could be 1 of 2 or 2 of 2 tiles
-    # if you sense three breezes in a 'C' formation, the pit is definitely in the middle. 
-    # def isPit(self):
+
 
 #======================cl=======================================================
     ''' updates scores of current tile and adj tiles
@@ -187,10 +185,15 @@ class MyAI ( Agent ):
                 self.heuristic[tile] = 0
 
         # whenever breeze or stench, add 3 to all UNVISITED adj tiles 
-        if stench or breeze:
+        if breeze:
             for tile in self.adjTiles():
                 if tile not in self.visited:
-                    self.heuristic[tile] += 3
+                    self.heuristic[tile] += 4
+        
+        if stench:
+            for tile in self.adjTiles():
+                if tile not in self.visited:
+                    self.heuristic[tile] += 5
 
         # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
         if self.currentTile not in self.visited and not stench and not breeze:
@@ -213,7 +216,7 @@ class MyAI ( Agent ):
         # # if any adj tiles around you are visited, add 1
         # for tile in self.adjTiles():
         #     if tile in self.visited:
-        #         self.heuristic[tile] += 1
+        #         self.heuristic[tile] += 2
 
         # mark current tile as visited 
         self.visited.add(self.currentTile)
