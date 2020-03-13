@@ -180,61 +180,28 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def setTargetTile(self): # set the next Target Tile
-        #if the current tile has breeze or pit and there's no way to backtrack
-        if self.allAdjSafe(): # if all adj tiles are safe
-            for tile in self.adjTiles():
-                # the safest tile = not visited and no wumpus and no pit
-                if Sensor.VISITED not in self.knownWorld[tile] and tile != self.previousTile:
-                    print()
-                    print("################ SET TARGET (ALL SAFE && NOT RANDOM) ###################")
-                    print("the tile {} is not visited yet and is very safe (no wumpus and no pits)".format(tile))
-                    self.targetTile = tile
-                    print("################ SET TARGET (ALL SAFE && NOT RANDOM) ###################")
-                    break      
-                
-                else:
-                    print()
-                    print("################ SET TARGET ###################")
-                    print("when all safe, randomly picked one tile")
-                    self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
-                    print("the target randomly being picked is".format(self.targetTile))
-                    print("################ SET TARGET ###################")
-        
-                '''
-                # second safest and visited
-                elif (Sensor.MAYBE_WUMPUS or Sensor.MAYBE_PITS) not in self.knownWorld[tile] and Sensor.VISITED in self.knownWorld[tile]:
-                    print("the tile is not visited yet and is 2nd safe (no possible wumpus or no possible pits) ")
-                    self.targetTile = tile
-                    break
+        scores = {}
+        for tile in self.adjTiles():
+            scores[tile] = 0
+            if Sensor.MAYBE_PITS in self.knownWorld[tile]:
+                scores[tile] += 3
+            if Sensor.MAYBE_WUMPUS in self.knownWorld[tile]:
+                scores[tile] += 3
+            if Sensor.VISITED in self.knownWorld[tile]:
+                scores[tile] += 1
+            if Sensor.SAFE in self.knownWorld[tile]:
+                scores[tile] += 1
+            if tile == self.previousTile:
+                scores[tile] += 2
+        sorted_scores = sorted(scores.items(), key=lambda item: item[1])
+        print(f'ADJ SCORES {sorted_scores}')
+        input()
+        self.targetTile = sorted_scores[0][0]
+    # if you sense two breezes diagonal from each other, pit could be 1 of 2 or 2 of 2 tiles
+    # if you sense three breezes in a 'C' formation, the pit is definitely in the middle. 
+    # def isPit(self):
 
-                elif Sensor.SAFE in self.knownWorld[tile] and (Sensor.BREEZE or Sensor.STENCH) in self.knownWorld[tile]:
-                    self.targetTile = tile
-                    break
-                 '''
 
-        # if not all tiles are safe    
-
-        else:
-            for tile in self.adjTiles():
-                # pick the one that's safe and not visited yet, explore the world
-                if Sensor.SAFE in self.knownWorld[tile] and Sensor.VISITED not in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile] and tile != self.previousTile:
-                        self.targetTile = tile
-                        break
-                elif (Sensor.SAFE or Sensor.VISITED) in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
-                        self.targetTile = tile
-                        break
-
-                elif (Sensor.SAFE or Sensor.VISITED) in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS or Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
-                        self.targetTile = tile
-                        break
-                else:
-                    print()
-                    print("################ SET TARGET ###################")
-                    print("when it's not all safe, just randomly picked one tile")
-                    self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
-                    print("the target randomly being picked is".format(self.targetTile))
-                    print("################ SET TARGET ###################")
-            
 
     def moveToTargetTile(self):
         '''update the face and current tile before turning'''
@@ -448,3 +415,60 @@ class MyAI ( Agent ):
                 adjT.append(tile)
 
         return adjT
+
+    # def setTargetTile(self): # set the next Target Tile
+    #     #if the current tile has breeze or pit and there's no way to backtrack
+    #     if self.allAdjSafe(): # if all adj tiles are safe
+    #         for tile in self.adjTiles():
+    #             # the safest tile = not visited and no wumpus and no pit
+    #             if Sensor.VISITED not in self.knownWorld[tile] and tile != self.previousTile:
+    #                 print()
+    #                 print("################ SET TARGET (ALL SAFE && NOT RANDOM) ###################")
+    #                 print("the tile {} is not visited yet and is very safe (no wumpus and no pits)".format(tile))
+    #                 self.targetTile = tile
+    #                 print("################ SET TARGET (ALL SAFE && NOT RANDOM) ###################")
+    #                 break      
+                
+    #             else:
+    #                 print()
+    #                 print("################ SET TARGET ###################")
+    #                 print("when all safe, randomly picked one tile")
+    #                 self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
+    #                 print("the target randomly being picked is".format(self.targetTile))
+    #                 print("################ SET TARGET ###################")
+        
+    #             '''
+    #             # second safest and visited
+    #             elif (Sensor.MAYBE_WUMPUS or Sensor.MAYBE_PITS) not in self.knownWorld[tile] and Sensor.VISITED in self.knownWorld[tile]:
+    #                 print("the tile is not visited yet and is 2nd safe (no possible wumpus or no possible pits) ")
+    #                 self.targetTile = tile
+    #                 break
+
+    #             elif Sensor.SAFE in self.knownWorld[tile] and (Sensor.BREEZE or Sensor.STENCH) in self.knownWorld[tile]:
+    #                 self.targetTile = tile
+    #                 break
+    #              '''
+
+    #     # if not all tiles are safe    
+
+    #     else:
+    #         for tile in self.adjTiles():
+    #             # pick the one that's safe and not visited yet, explore the world
+    #             if Sensor.SAFE in self.knownWorld[tile] and Sensor.VISITED not in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile] and tile != self.previousTile:
+    #                     self.targetTile = tile
+    #                     break
+    #             elif (Sensor.SAFE or Sensor.VISITED) in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
+    #                     self.targetTile = tile
+    #                     break
+
+    #             elif (Sensor.SAFE or Sensor.VISITED) in self.knownWorld[tile] and (Sensor.MAYBE_WUMPUS or Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile]:
+    #                     self.targetTile = tile
+    #                     break
+    #             else:
+    #                 print()
+    #                 print("################ SET TARGET ###################")
+    #                 print("when it's not all safe, just randomly picked one tile")
+    #                 self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
+    #                 print("the target randomly being picked is".format(self.targetTile))
+    #                 print("################ SET TARGET ###################")
+            
