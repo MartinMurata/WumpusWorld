@@ -59,7 +59,7 @@ class MyAI ( Agent ):
     #=============================================================================
     #=============================================================================
     def __init__ ( self ):
-        self.knownWorld = defaultdict(set) #(coordinate:sensors) map of visited tiles (tuple:list)
+        self.visited = set() #(coordinate:sensors) map of visited tiles (tuple:list)
         self.previousTile = (0,0) 
         self.heuristic = {} # for A*, after finding the gold
         self.currentTile = (0,0) # set initial tile
@@ -92,7 +92,7 @@ class MyAI ( Agent ):
         if glitter:  
             # grab that big gold man 
             print("!!!!!!!!!!!! FOUND THE GOLD !!!!!!!!!!!!")
-            self.knownWorld[self.currentTile].add(Sensor.GLITTER)
+            self.visited.add(self.currentTile)
             self.findGoldState = False
             self.goHomeState = True
             return Agent.Action.GRAB
@@ -119,7 +119,7 @@ class MyAI ( Agent ):
         print("the target tile is", self.targetTile)
         print("the agent is facing", self.facing)
         print()
-        print(self.knownWorld)
+        print(self.visited)
         print("################ ON THE WAY HOME ###################")
         print()
 
@@ -130,77 +130,95 @@ class MyAI ( Agent ):
         return self.moveToTargetTile()
 
     def goHomeTile(self):
+        # going home 
+        # on way home, follow visited tiles in direction that the max(x,y) is decreasing 
+        # after you leave a tile, mark unvisited 
+        scores = {}
         for tile in self.adjTiles():
-            if Sensor.VISITED in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
-                print("this tile is visited, so it's safe to go from here")
-                self.targetTile = tile
-                break
-            elif (Sensor.VISITED or Sensor.SAFE) in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
-                print("this tile is visited, so it's safe to go from here")
-                self.targetTile = tile
-                break
-
-            elif (Sensor.MAYBE_PITS and Sensor.MAYBE_WUMPUS) not in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
-                self.targetTile = tile
-                break
-
-            elif Sensor.MAYBE_PITS not in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
-                self.targetTile = tile
-                break
-
-            elif Sensor.MAYBE_WUMPUS not in self.knownWorld[tile] and (tile[0] < self.currentTile[0] or tile[1] < self.currentTile[1]):
-                self.targetTile = tile
-                break
-
+            scores[tile] = 0
+            if tile not in self.visited:
+                scores[tile] += 10
             else:
-                self.targetTile = self.adjTiles()[random.randrange(len(self.adjTiles()))]
+                scores[tile] = max(tile[0],tile[1])
+        sorted_scores = sorted(scores.items(), key=lambda item: item[1])
+        # print(f'ADJ SCORES {sorted_scores}')
+        # input()
+        self.visited.remove(sorted_scores[0][0])
+        self.targetTile = sorted_scores[0][0]
 
 
     #=============================================================================
-    '''scores all adjacent tiles on cost and heuristic. Sets target tile to the adj
-        tile with lowest score. used in A* search
-
-        G(n) cost = prob of wumpus + prob of pit
-        H(n) heuristic = min(x-coord,y-coord)
-        F(n) score = cost + heuristic
-    '''
-    #=============================================================================  
-    def allAdjSafe(self):
-        for tile in self.adjTiles():
-            if Sensor.SAFE not in self.knownWorld[tile]:
-                return False
-        return True
-
-    #=============================================================================
-    '''randomly picks unvisited tile. If there is any intelligence in this AI, it should
-        be done here.....since picking the next tile requires a smart noodle...
-        THIS IS NOT MECHANICS, USE SMART AI ALGORITHM
-        use the weights for the pits and wumpus you made 
-        probs want to make the possibleWumpus/Pit map into a priority queue, most probable tile at the top
+    '''chooses the adj tile with lowest score
     '''
     #=============================================================================
     def setTargetTile(self): # set the next Target Tile
         scores = {}
         for tile in self.adjTiles():
-            scores[tile] = 0
-            if Sensor.MAYBE_PITS in self.knownWorld[tile]:
-                scores[tile] += 3
-            if Sensor.MAYBE_WUMPUS in self.knownWorld[tile]:
-                scores[tile] += 3
-            if Sensor.VISITED in self.knownWorld[tile]:
-                scores[tile] += 1
-            if Sensor.SAFE in self.knownWorld[tile]:
-                scores[tile] += 1
-            if tile == self.previousTile:
-                scores[tile] += 2
+            scores[tile] = self.heuristic[tile]
         sorted_scores = sorted(scores.items(), key=lambda item: item[1])
-        print(f'ADJ SCORES {sorted_scores}')
-        input()
+        # print(f'ADJ SCORES {sorted_scores}')
+        # input()
         self.targetTile = sorted_scores[0][0]
     # if you sense two breezes diagonal from each other, pit could be 1 of 2 or 2 of 2 tiles
     # if you sense three breezes in a 'C' formation, the pit is definitely in the middle. 
     # def isPit(self):
 
+#======================cl=======================================================
+    ''' updates scores of current tile and adj tiles
+    '''
+    #=============================================================================
+    def updateWorld(self, stench, breeze, bump, scream):
+        '''which is tile marked as the wall'''
+        # if there is no wumpus or pits (the agent didn't die)
+        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
+            self.updateWalls()
+            self.currentTile = self.previousTile
+            self.face = self.prevFacing
+            self.setTargetTile()
+            return 
+
+        #initialize current tile score to 0
+        if self.currentTile not in self.heuristic:
+            self.heuristic[self.currentTile] = 0
+
+        # initialize adj tiles scores to 0
+        for tile in self.adjTiles():
+            if tile not in self.heuristic:
+                self.heuristic[tile] = 0
+
+        # whenever breeze or stench, add 3 to all UNVISITED adj tiles 
+        if stench or breeze:
+            for tile in self.adjTiles():
+                if tile not in self.visited:
+                    self.heuristic[tile] += 3
+
+        # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
+        if self.currentTile not in self.visited and not stench and not breeze:
+            for tile in self.adjTiles():
+                if tile not in self.visited:
+                    self.heuristic[tile] -= 3
+
+        # whenever tile you visited before has no senses, subtract 1 from all UNVISITED adj tiles 
+        if self.currentTile in self.visited and not stench and not breeze:
+            for tile in self.adjTiles():
+                if tile not in self.visited:
+                    self.heuristic[tile] -= 1
+
+        # whenever tile you visited before has senses, add 1 to all UNVISITED adj tiles 
+        if self.currentTile in self.visited and (stench or breeze):
+            for tile in self.adjTiles():
+                if tile not in self.visited:
+                    self.heuristic[tile] += 1
+                    
+        # # if any adj tiles around you are visited, add 1
+        # for tile in self.adjTiles():
+        #     if tile in self.visited:
+        #         self.heuristic[tile] += 1
+
+        # mark current tile as visited 
+        self.visited.add(self.currentTile)
+        # whenever you visit, add 2
+        self.heuristic[self.currentTile] += 2
 
 
     def moveToTargetTile(self):
@@ -214,7 +232,7 @@ class MyAI ( Agent ):
             print("the target tile is", self.targetTile)
             print("the agent is facing", self.facing)
             print()
-            print(self.knownWorld)
+            print(self.visited)
             print("################ PREV MAP INFO ###################")
             print()
 
@@ -336,68 +354,6 @@ class MyAI ( Agent ):
             print("################ BOUND ###################")
             print()
             #elf.currentTile[0] = self.currentTile[0] - 1
-    
-    #======================cl=======================================================
-    ''' keeps track of everything agent has seen so far. Saves in a dictionary
-        as key = coordinate and value = sense
-        
-    '''
-    #=============================================================================
-    def updateWorld(self, stench, breeze, bump, scream):
-        '''which is tile marked as the wall'''
-        # if there is no wumpus or pits (the agent didn't die)
-        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
-            self.updateWalls()
-            print()
-            print("################ BACK TO THE PREV TILE ###################")
-            print("the current tile {}".format(self.currentTile), "is a wall")
-            self.currentTile = self.previousTile
-            self.face = self.prevFacing
-            '''set a target here'''
-            self.setTargetTile()
-            print("################ BACK TO THE PREV TILE ###################")
-            print()
-
-        self.knownWorld[self.currentTile].add(Sensor.SAFE)
-        self.knownWorld[self.currentTile].add(Sensor.VISITED)
-
-        if (not stench and not breeze):
-            self.knownWorld[self.currentTile].add(Sensor.SAFE)
-            for tile in self.adjTiles():
-                self.knownWorld[tile].add(Sensor.SAFE)
-
-        if stench:
-            self.knownWorld[self.currentTile].add(Sensor.STENCH)
-            for tile in self.adjTiles():
-                if Sensor.SAFE not in self.knownWorld[tile]: # if the tile is not marked safe yet
-                    self.knownWorld[tile].add(Sensor.MAYBE_WUMPUS) # possible wumpus
-
-        if breeze:
-            self.knownWorld[self.currentTile].add(Sensor.BREEZE)
-            for tile in self.adjTiles():
-                if Sensor.SAFE not in self.knownWorld[tile]:
-                    self.knownWorld[tile].add(Sensor.MAYBE_PITS) # possible pits
-
-
-        if not stench and Sensor.MAYBE_WUMPUS in self.knownWorld[self.currentTile]:
-            self.knownWorld[self.currentTile].discard(Sensor.MAYBE_WUMPUS)
-            self.knownWorld[self.currentTile].add(Sensor.SAFE)
-        
-        if not breeze and Sensor.MAYBE_PITS in self.knownWorld[self.currentTile]:
-            self.knownWorld[self.currentTile].discard(Sensor.MAYBE_PITS)
-            self.knownWorld[self.currentTile].add(Sensor.SAFE)
-
-        # update the whole world again (make sure everything is right here)
-        for tile in list(self.knownWorld):
-            if (Sensor.MAYBE_PITS or Sensor.MAYBE_WUMPUS) in self.knownWorld[tile] and (Sensor.VISITED or Sensor.SAFE) in self.knownWorld[tile]:
-                self.knownWorld[tile].discard(Sensor.MAYBE_WUMPUS)
-                self.knownWorld[tile].discard(Sensor.MAYBE_PITS)
-
-            # have to update again here; delete the tile out of bound
-            if (self.possibleMapSize[0] != 100000 or self.possibleMapSize[1] != 100000): # already update before
-                if (tile[0] >= self.possibleMapSize[0] or tile[1] >= self.possibleMapSize[1]):
-                    del self.knownWorld[tile]
-            
 
     def adjTiles(self):
         '''return a list of adjTiles'''
