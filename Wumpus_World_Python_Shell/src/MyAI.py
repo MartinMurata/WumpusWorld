@@ -158,6 +158,11 @@ class MyAI ( Agent ):
         sorted_scores = sorted(scores.items(), key=lambda item: item[1])
         # print(f'ADJ SCORES {sorted_scores}')
         # input()
+        if sorted_scores[0][1] == sorted_scores[1][1]:
+            self.targetTile = sorted_scores[random.randint(0,1)][0]
+        elif sorted_scores[0][1] == sorted_scores[1][1] and sorted_scores[0][1] == sorted_scores[2][1]:
+            self.targetTile = sorted_scores[random.randint(0,2)][0]
+        else:
         self.targetTile = sorted_scores[0][0]
 
 
