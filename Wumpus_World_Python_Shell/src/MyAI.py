@@ -218,6 +218,11 @@ class MyAI ( Agent ):
         #     if tile in self.visited:
         #         self.heuristic[tile] += 2
 
+        # if stuck in loop
+        for tile in self.adjTiles():
+            if self.heuristic[tile] > 20 and tile in self.visited:
+                self.heuristic[tile] += 30
+
         # mark current tile as visited 
         self.visited.add(self.currentTile)
         # whenever you visit, add 2
