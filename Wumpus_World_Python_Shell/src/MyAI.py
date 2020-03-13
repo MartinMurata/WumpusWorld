@@ -182,12 +182,12 @@ class MyAI ( Agent ):
                 return 
 
             #initialize current tile not visited before score to 0
-            if self.currentTile not in self.heuristic and not in self.visited:
+            if self.currentTile not in self.heuristic and self.currentTile not in self.visited:
                 self.heuristic[self.currentTile] = 0
 
             # initialize adj tiles scores to 0
             for tile in self.adjTiles():
-                if tile not in self.heuristic and not in self.visited:
+                if tile not in self.heuristic and self.currentTile not in self.visited:
                     self.heuristic[tile] = 0
 
             # whenever breeze or stench, add 3 to all UNVISITED adj tiles 
