@@ -76,10 +76,10 @@ class MyAI ( Agent ):
     def getAction( self, stench, breeze, glitter, bump, scream ):
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
-            print("still finding gold")
+            # print("still finding gold")
             return self.findingGoldAction(glitter)
         if self.goHomeState:
-            print("already found the gold")
+            # print("already found the gold")
             return self.goHomeAction(stench, breeze, glitter, bump, scream)
 
     #=============================================================================
@@ -87,11 +87,11 @@ class MyAI ( Agent ):
     #=============================================================================
     def findingGoldAction( self, glitter):
         if self.currentTile != self.targetTile:
-            print("have to turn again")
+            # print("have to turn again")
             return self.moveToTargetTile()
         if glitter:  
             # grab that big gold man 
-            print("!!!!!!!!!!!! FOUND THE GOLD !!!!!!!!!!!!")
+            # print("!!!!!!!!!!!! FOUND THE GOLD !!!!!!!!!!!!")
             self.visited.add(self.currentTile)
             self.findGoldState = False
             self.goHomeState = True
@@ -109,19 +109,19 @@ class MyAI ( Agent ):
     #=============================================================================
     def goHomeAction(self, stench, breeze, glitter, bump, scream ):
         if self.currentTile == (0,0):
-            print("already get back home!")
+            # print("already get back home!")
             return Agent.Action.CLIMB
         
-        print()
-        print("################ ON THE WAY HOME ###################")
-        print("refer to the top map")
-        print("the current tile is", self.currentTile)
-        print("the target tile is", self.targetTile)
-        print("the agent is facing", self.facing)
-        print()
-        print(self.visited)
-        print("################ ON THE WAY HOME ###################")
-        print()
+        # print()
+        # print("################ ON THE WAY HOME ###################")
+        # print("refer to the top map")
+        # print("the current tile is", self.currentTile)
+        # print("the target tile is", self.targetTile)
+        # print("the agent is facing", self.facing)
+        # print()
+        # print(self.visited)
+        # print("################ ON THE WAY HOME ###################")
+        # print()
 
         if self.currentTile != self.targetTile:
             return self.moveToTargetTile()
@@ -143,7 +143,7 @@ class MyAI ( Agent ):
         sorted_scores = sorted(scores.items(), key=lambda item: item[1])
         # print(f'ADJ SCORES {sorted_scores}')
         # input()
-        self.visited.remove(sorted_scores[0][0])
+        self.visited.remove(self.currentTile)
         self.targetTile = sorted_scores[0][0]
 
 
@@ -163,7 +163,7 @@ class MyAI ( Agent ):
         elif sorted_scores[0][1] == sorted_scores[1][1] and sorted_scores[0][1] == sorted_scores[2][1]:
             self.targetTile = sorted_scores[random.randint(0,2)][0]
         else:
-        self.targetTile = sorted_scores[0][0]
+            self.targetTile = sorted_scores[0][0]
 
 
 #======================cl=======================================================
@@ -171,87 +171,77 @@ class MyAI ( Agent ):
     '''
     #=============================================================================
     def updateWorld(self, stench, breeze, bump, scream):
-        '''which is tile marked as the wall'''
-        # if there is no wumpus or pits (the agent didn't die)
-        if bump: # tile you're on is a wall (not tile you tried to move to), or does bump mean 
-            self.updateWalls()
-            self.currentTile = self.previousTile
-            self.face = self.prevFacing
-            self.setTargetTile()
-            return 
-
-        #initialize current tile score to 0
-        if self.currentTile not in self.heuristic:
-            self.heuristic[self.currentTile] = 0
-
-        # initialize adj tiles scores to 0
-        for tile in self.adjTiles():
-            if tile not in self.heuristic:
-                self.heuristic[tile] = 0
-
-        # whenever breeze or stench, add 3 to all UNVISITED adj tiles 
-        if breeze:
-            for tile in self.adjTiles():
-                if tile not in self.visited:
-                    self.heuristic[tile] += 4
         
-        if stench:
-            for tile in self.adjTiles():
-                if tile not in self.visited:
-                    self.heuristic[tile] += 5
+        if self.currentTile == self.targetTile:
+            '''which is tile marked as the wall'''
+            if bump: 
+                self.updateWalls()
+                self.currentTile = self.previousTile
+                self.face = self.prevFacing
+                self.setTargetTile()
+                return 
 
-        # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
-        if self.currentTile not in self.visited and not stench and not breeze:
-            for tile in self.adjTiles():
-                if tile not in self.visited:
-                    self.heuristic[tile] -= 3
+            #initialize current tile not visited before score to 0
+            if self.currentTile not in self.heuristic and not in self.visited:
+                self.heuristic[self.currentTile] = 0
 
-        # whenever tile you visited before has no senses, subtract 1 from all UNVISITED adj tiles 
-        if self.currentTile in self.visited and not stench and not breeze:
+            # initialize adj tiles scores to 0
             for tile in self.adjTiles():
-                if tile not in self.visited:
-                    self.heuristic[tile] -= 1
+                if tile not in self.heuristic and not in self.visited:
+                    self.heuristic[tile] = 0
 
-        # whenever tile you visited before has senses, add 1 to all UNVISITED adj tiles 
-        if self.currentTile in self.visited and (stench or breeze):
+            # whenever breeze or stench, add 3 to all UNVISITED adj tiles 
+            if breeze:
+                for tile in self.adjTiles():
+                    if tile not in self.visited:
+                        self.heuristic[tile] += 4
+            
+            if stench:
+                for tile in self.adjTiles():
+                    if tile not in self.visited:
+                        self.heuristic[tile] += 5
+
+            # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
+            if self.currentTile not in self.visited and not stench and not breeze:
+                for tile in self.adjTiles():
+                    if tile not in self.visited:
+                        self.heuristic[tile] -= 5
+
+            # whenever tile you visited before has no senses, subtract 1 from all UNVISITED adj tiles 
+            if self.currentTile in self.visited and not stench and not breeze:
+                for tile in self.adjTiles():
+                    if tile not in self.visited:
+                        self.heuristic[tile] -= 2
+
+            # whenever tile you visited before has senses, add 1 to all UNVISITED adj tiles 
+            if self.currentTile in self.visited and (stench or breeze):
+                for tile in self.adjTiles():
+                    if tile not in self.visited:
+                        self.heuristic[tile] += 1
+            if scream:
+                # you killed the wumpus, subtract the tile you shot at by 25
+                pass
+            # # if any adj tiles around you are visited, add 1
             for tile in self.adjTiles():
-                if tile not in self.visited:
+                if tile in self.visited:
                     self.heuristic[tile] += 1
-                    
-        # # if any adj tiles around you are visited, add 1
-        # for tile in self.adjTiles():
-        #     if tile in self.visited:
-        #         self.heuristic[tile] += 2
 
-        # if stuck in loop
-        for tile in self.adjTiles():
-            if self.heuristic[tile] > 20 and tile in self.visited:
-                self.heuristic[tile] += 30
+            # if stuck in loop
+            for tile in self.adjTiles():
+                if self.heuristic[tile] > 20 and tile in self.visited:
+                    self.heuristic[tile] += 20
 
-        # mark current tile as visited 
-        self.visited.add(self.currentTile)
-        # whenever you visit, add 2
-        self.heuristic[self.currentTile] += 2
+            # mark current tile as visited 
+            self.visited.add(self.currentTile)
+            # whenever you visit, add 2
+            self.heuristic[self.currentTile] += 2
 
+    def shoot(self):
+        return Agent.Action.SHOOT
 
     def moveToTargetTile(self):
-        '''update the face and current tile before turning'''
-
-        if self.findGoldState:
-            print()
-            print("################ PREV MAP INFO ###################")
-            print("refer to the top map")
-            print("the current tile is", self.currentTile)
-            print("the target tile is", self.targetTile)
-            print("the agent is facing", self.facing)
-            print()
-            print(self.visited)
-            print("################ PREV MAP INFO ###################")
-            print()
-
+        '''update the face and current tile before moving forward'''
         if (self.targetTile[0] > self.currentTile[0]) and (self.targetTile[1] == self.currentTile[1]):
-            print("the target is on the right")
-            # if the target tile is on the right of the current tile
             if self.facing == Direction.RIGHT:
                 self.prevFacing = self.facing
                 self.previousTile = self.currentTile
@@ -268,15 +258,12 @@ class MyAI ( Agent ):
                 self.facing = Direction.RIGHT
                 return Agent.Action.TURN_RIGHT
 
-            elif self.facing == Direction.LEFT: # facing the opposite way
-                # need to face up
+            elif self.facing == Direction.LEFT: 
                 self.prevFacing = self.facing
                 self.facing = Direction.UP
                 return Agent.Action.TURN_RIGHT
 
         elif (self.targetTile[0] == self.currentTile[0]) and (self.targetTile[1] > self.currentTile[1]): 
-            # if the target tile is on the top of the current tile
-            print("the target is on the top")
             if self.facing == Direction.UP:
                 self.prevFacing = self.facing
                 self.previousTile = self.currentTile
@@ -300,8 +287,6 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_RIGHT
             
         elif (self.targetTile[0] < self.currentTile[0]) and (self.targetTile[1] == self.currentTile[1]):
-            # if the target tile is on the left of the current tile
-            print("the target is on the left")
             if self.facing == Direction.LEFT:
                 self.prevFacing = self.facing
                 self.previousTile = self.currentTile
@@ -325,8 +310,6 @@ class MyAI ( Agent ):
                 return Agent.Action.TURN_RIGHT
 
         elif (self.targetTile[0] == self.currentTile[0]) and (self.targetTile[1] < self.currentTile[1]):
-            # if the target tile is on the bottom of the current tile
-            print("the target is on the bottom")
             if self.facing == Direction.DOWN:
                 self.prevFacing = self.facing
                 self.previousTile = self.currentTile
@@ -345,7 +328,6 @@ class MyAI ( Agent ):
 
             elif self.facing == Direction.UP:
                 self.prevFacing = self.facing
-                # which way doesn't matter, either left, right
                 self.facing = Direction.RIGHT
                 return Agent.Action.TURN_RIGHT
 
@@ -353,20 +335,8 @@ class MyAI ( Agent ):
     def updateWalls(self):
         if self.facing == Direction.UP:
             self.possibleMapSize[1] = self.currentTile[1]
-            print()
-            print("################BOUND###################")
-            print("now knows the bound of the row: ", self.possibleMapSize[1])
-            print("################BOUND###################")
-            print()
-            #self.currentTile[1] = self.currentTile[1]-1 # backtrack here
         elif self.facing == Direction.RIGHT:
             self.possibleMapSize[0] = self.currentTile[0]
-            print()
-            print("################ BOUND ###################")
-            print("now knows the bound of the col: ", self.possibleMapSize[0])
-            print("################ BOUND ###################")
-            print()
-            #elf.currentTile[0] = self.currentTile[0] - 1
 
     def adjTiles(self):
         '''return a list of adjTiles'''
