@@ -55,6 +55,7 @@ class MyAI ( Agent ):
         self.targetTile = (0,0) #tile you want to either move to, or shoot at, should always be adjacent to current square, initially same as origin
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
+        self.shootWumpusState = False
         self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
@@ -63,6 +64,10 @@ class MyAI ( Agent ):
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             # print("still finding gold")
+            if self.shootWumpusState:
+                self.shootWumpusState = False
+                return Agent.Action.SHOOT
+                
             return self.findingGoldAction(glitter)
         if self.goHomeState:
             # print("already found the gold")
@@ -128,8 +133,8 @@ class MyAI ( Agent ):
     2. initialize UNVISITED adj tiles scores to 0 
     3. if current tile has breeze or stench, add 3 to all UNVISITED adj tiles 
         - penalizes adj tiles
-    4. if current tile is UNVISTED and has no senses, subtract 3 from all UNVISITED adj tiles
-        - reward adj tiles, safe tiles means surrounding tiles are not wumpus or pit 
+    4. if current tile is UNVISTED and has no senses, subtract 10 from all UNVISITED adj tiles
+        - reward adj tiles, SAFE tiles means surrounding tiles are not wumpus or pit 
     5. if current tile you VISITED before has no senses, subtract 1 from all UNVISITED adj tiles
         - after backtracking to a safe tile, reward adj tiles a little more, promotes exloring new paths
     6. if current tile you VISITED before has senses, add 1 to all UNVISITED adj tiles
@@ -144,7 +149,7 @@ class MyAI ( Agent ):
 
     '''
     def updateWorld(self, stench, breeze, bump, scream):
-        
+        shoot = False
         if self.currentTile == self.targetTile:
             if bump: #current tile is wall
                 self.updateWalls()
@@ -172,12 +177,13 @@ class MyAI ( Agent ):
                 for tile in self.adjTiles():
                     if tile not in self.visited:
                         self.heuristic[tile] += 5
+                self.shootWumpusState = True
 
             # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
             if self.currentTile not in self.visited and not stench and not breeze:
                 for tile in self.adjTiles():
                     if tile not in self.visited:
-                        self.heuristic[tile] -= 5
+                        self.heuristic[tile] -= 10
 
             # whenever tile you visited before has no senses, subtract 1 from all UNVISITED adj tiles 
             if self.currentTile in self.visited and not stench and not breeze:
@@ -192,7 +198,17 @@ class MyAI ( Agent ):
                         self.heuristic[tile] += 1
             if scream:
                 # you killed the wumpus, subtract the tile you shot at by 25
-                pass
+                self.shootWumpusState = False
+
+                if self.facing == Direction.RIGHT:
+                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 15
+                if self.facing == Direction.LEFT:
+                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 15
+                if self.facing == Direction.UP:
+                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 15
+                if self.facing == Direction.DOWN:
+                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 15
+
             # # if any adj tiles around you are visited, add 1
             for tile in self.adjTiles():
                 if tile in self.visited:
@@ -200,7 +216,7 @@ class MyAI ( Agent ):
 
             # if stuck in loop
             for tile in self.adjTiles():
-                if self.heuristic[tile] > 15 and tile in self.visited:
+                if self.heuristic[tile] >= 15 and tile in self.visited:
                     # self.heuristic[tile] += 20
                     self.findGoldState = False
                     self.goHomeState = True
@@ -209,6 +225,11 @@ class MyAI ( Agent ):
             self.visited.add(self.currentTile)
             # whenever you visit, add 2
             self.heuristic[self.currentTile] += 2
+
+            if shoot:
+                print("IMMA SHOOT")
+                input()
+                return Agent.Action.SHOOT
 
     def shoot(self):
         return Agent.Action.SHOOT
