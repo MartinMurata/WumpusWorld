@@ -36,24 +36,11 @@ import random
 from collections import defaultdict
 from enum import Enum
 
-class Sensor(Enum):
-    STENCH = "ST"
-    BREEZE = "BR"
-    GLITTER = "GL"
-    BUMP = "BU"
-    SCREAM = "SC"
-    SAFE = "SA" # no pits or wumpus
-    VISITED = "VI"
-    MAYBE_WUMPUS = "MW"
-    MAYBE_PITS = "MP"
-
 class Direction(Enum):
     RIGHT = "R"
     LEFT = "L"
     UP = "U"
     DOWN = "D"
-
-#printWord.printWorld("/home/hsuth/CS171/WumpusWorld/Wumpus_World_World_Generator/Worlds/world_0.txt")
 
 class MyAI ( Agent ):
     #=============================================================================
@@ -70,9 +57,6 @@ class MyAI ( Agent ):
         self.goHomeState = False #1 of two stages agent can be in
         self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
 
-    #=============================================================================
-    '''main interface for this class'''
-    #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
         if self.currentTile == (0,0) and (stench or breeze):
             return Agent.Action.CLIMB
@@ -84,9 +68,6 @@ class MyAI ( Agent ):
             # print("already found the gold")
             return self.goHomeAction(stench, breeze, glitter, bump, scream)
 
-    #=============================================================================
-    '''main logic pertaining to getting to the gold.''' 
-    #=============================================================================
     def findingGoldAction( self, glitter):
         if self.currentTile != self.targetTile:
             # print("have to turn again")
@@ -102,29 +83,10 @@ class MyAI ( Agent ):
         self.setTargetTile()
         return self.moveToTargetTile()
 
-    #=============================================================================
-    ''' main logic pertaining to climbing out of the cave after getting gold. 
-        Uses algorithm to find best path out of cave based on known world 
-        (dijkstras? A*? idk yet) 
-        THIS IS NOT MECHANICS, USE SMART AI ALGORITHM
-    '''
-    #=============================================================================
     def goHomeAction(self, stench, breeze, glitter, bump, scream ):
         if self.currentTile == (0,0):
             # print("already get back home!")
             return Agent.Action.CLIMB
-        
-        # print()
-        # print("################ ON THE WAY HOME ###################")
-        # print("refer to the top map")
-        # print("the current tile is", self.currentTile)
-        # print("the target tile is", self.targetTile)
-        # print("the agent is facing", self.facing)
-        # print()
-        # print(self.visited)
-        # print("################ ON THE WAY HOME ###################")
-        # print()
-
         if self.currentTile != self.targetTile:
             return self.moveToTargetTile()
 
@@ -132,9 +94,6 @@ class MyAI ( Agent ):
         return self.moveToTargetTile()
 
     def goHomeTile(self):
-        # going home 
-        # on way home, follow visited tiles in direction that the max(x,y) is decreasing 
-        # after you leave a tile, mark unvisited 
         scores = {}
         for tile in self.adjTiles():
             scores[tile] = 0
@@ -148,11 +107,6 @@ class MyAI ( Agent ):
         self.visited.remove(self.currentTile)
         self.targetTile = sorted_scores[0][0]
 
-
-    #=============================================================================
-    '''chooses the adj tile with lowest score
-    '''
-    #=============================================================================
     def setTargetTile(self): # set the next Target Tile
         scores = {}
         for tile in self.adjTiles():
@@ -166,17 +120,33 @@ class MyAI ( Agent ):
             self.targetTile = sorted_scores[random.randint(0,2)][0]
         else:
             self.targetTile = sorted_scores[0][0]
-
-
-#======================cl=======================================================
-    ''' updates scores of current tile and adj tiles
     '''
-    #=============================================================================
+    UpdateWorld Algorithm:
+    Assumes the setTarget always chooses the adj tile with the SMALLEST score
+
+    1. initialize current tile score to 0 if UNVISITED
+    2. initialize UNVISITED adj tiles scores to 0 
+    3. if current tile has breeze or stench, add 3 to all UNVISITED adj tiles 
+        - penalizes adj tiles
+    4. if current tile is UNVISTED and has no senses, subtract 3 from all UNVISITED adj tiles
+        - reward adj tiles, safe tiles means surrounding tiles are not wumpus or pit 
+    5. if current tile you VISITED before has no senses, subtract 1 from all UNVISITED adj tiles
+        - after backtracking to a safe tile, reward adj tiles a little more, promotes exloring new paths
+    6. if current tile you VISITED before has senses, add 1 to all UNVISITED adj tiles
+        - penalize adj tiles a little, emphasizes the fact you probably don't want to go there 
+    7. if any adj tiles around you are VISITED, add 1  
+        - penalize visited tiles a little, promotes exploration
+    8. for any adj tile greater than a threshold, give up, go home instead. Helps avoid inifinite LOOPING 
+        - if agent cannot find new path (stuck in a cycle), adj scores will keep increasing, if gets to certain level, just go home. 
+    9. mark current tile as visited 
+    10. whenever you're done visiting current tile, add 2
+        - penalize visited tiles a little, promotes exploration
+
+    '''
     def updateWorld(self, stench, breeze, bump, scream):
         
         if self.currentTile == self.targetTile:
-            '''which is tile marked as the wall'''
-            if bump: 
+            if bump: #current tile is wall
                 self.updateWalls()
                 self.currentTile = self.previousTile
                 self.face = self.prevFacing
