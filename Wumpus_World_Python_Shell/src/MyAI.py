@@ -74,6 +74,8 @@ class MyAI ( Agent ):
     '''main interface for this class'''
     #=============================================================================
     def getAction( self, stench, breeze, glitter, bump, scream ):
+        if self.currentTile == (0,0) and (stench or breeze):
+            return Agent.Action.CLIMB
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             # print("still finding gold")
@@ -228,8 +230,10 @@ class MyAI ( Agent ):
 
             # if stuck in loop
             for tile in self.adjTiles():
-                if self.heuristic[tile] > 20 and tile in self.visited:
-                    self.heuristic[tile] += 20
+                if self.heuristic[tile] > 15 and tile in self.visited:
+                    # self.heuristic[tile] += 20
+                    self.findGoldState = False
+                    self.goHomeState = True
 
             # mark current tile as visited 
             self.visited.add(self.currentTile)
