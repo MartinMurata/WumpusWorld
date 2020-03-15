@@ -179,7 +179,7 @@ class MyAI ( Agent ):
             if breeze:
                 for tile in self.adjTiles():
                     if tile not in self.visited:
-                        self.heuristic[tile] += 8
+                        self.heuristic[tile] += 10
             
             if stench and not self.wumpusDead:
                 for tile in self.adjTiles():
@@ -200,10 +200,10 @@ class MyAI ( Agent ):
                         self.heuristic[tile] -= 2
 
             # whenever tile you visited before has senses, add 1 to all UNVISITED adj tiles 
-            # if self.currentTile in self.visited and (stench or breeze):
-            #     for tile in self.adjTiles():
-            #         if tile not in self.visited:
-            #             self.heuristic[tile] += 1
+            if self.currentTile in self.visited and (stench or breeze):
+                for tile in self.adjTiles():
+                    if tile not in self.visited:
+                        self.heuristic[tile] -= 2
             if scream:
                 # you killed the wumpus, subtract the tile you shot at by 25
                 self.shootWumpusState = False
