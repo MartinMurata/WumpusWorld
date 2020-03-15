@@ -56,10 +56,10 @@ class MyAI ( Agent ):
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
         self.shootWumpusState = False
-        self.hasArrows = True
+        self.hasArrow = True
         self.wumpusDead = False
         self.numSteps = 0
-        self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
+        self.possibleMapSize = [7,7] # change it to a list b/c tuple is immutable [col,row]
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
         if self.currentTile != self.previousTile:
@@ -69,11 +69,6 @@ class MyAI ( Agent ):
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             # print("still finding gold")
-            if self.shootWumpusState and self.hasArrows:
-                self.hasArrows = False
-                self.shootWumpusState = False
-                return Agent.Action.SHOOT
-                
             return self.findingGoldAction(glitter)
         if self.goHomeState:
             # print("already found the gold")
@@ -91,6 +86,11 @@ class MyAI ( Agent ):
             self.goHomeState = True
             return Agent.Action.GRAB
 
+        if self.shootWumpusState and self.hasArrow and not self.goHomeState:
+            self.hasArrow = False
+            self.shootWumpusState = False
+            return Agent.Action.SHOOT
+                
         self.setTargetTile()
         return self.moveToTargetTile()
 
