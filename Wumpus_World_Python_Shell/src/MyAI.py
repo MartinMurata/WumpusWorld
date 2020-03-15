@@ -179,7 +179,7 @@ class MyAI ( Agent ):
             if breeze:
                 for tile in self.adjTiles():
                     if tile not in self.visited:
-                        self.heuristic[tile] += 8
+                        self.heuristic[tile] += 10
             
             if stench and not self.wumpusDead:
                 for tile in self.adjTiles():
@@ -224,7 +224,7 @@ class MyAI ( Agent ):
 
             # if stuck in loop
             for tile in self.adjTiles():
-                if self.heuristic[tile] >= 10 and tile in self.visited:
+                if self.heuristic[tile] >= 15 and tile in self.visited:
                     # self.heuristic[tile] += 20
                     self.findGoldState = False
                     self.goHomeState = True
