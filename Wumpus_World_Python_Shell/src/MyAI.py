@@ -56,6 +56,8 @@ class MyAI ( Agent ):
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
         self.shootWumpusState = False
+        self.hasArrows = True
+        self.wumpusDead = False
         self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
@@ -64,7 +66,8 @@ class MyAI ( Agent ):
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
             # print("still finding gold")
-            if self.shootWumpusState:
+            if self.shootWumpusState and self.hasArrows:
+                self.hasArrows = False
                 self.shootWumpusState = False
                 return Agent.Action.SHOOT
                 
@@ -173,7 +176,7 @@ class MyAI ( Agent ):
                     if tile not in self.visited:
                         self.heuristic[tile] += 4
             
-            if stench:
+            if stench and not self.wumpusDead:
                 for tile in self.adjTiles():
                     if tile not in self.visited:
                         self.heuristic[tile] += 5
@@ -199,7 +202,7 @@ class MyAI ( Agent ):
             if scream:
                 # you killed the wumpus, subtract the tile you shot at by 25
                 self.shootWumpusState = False
-
+                self.wumpusDead = True
                 if self.facing == Direction.RIGHT:
                     self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 15
                 if self.facing == Direction.LEFT:
