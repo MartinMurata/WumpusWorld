@@ -116,7 +116,12 @@ class MyAI ( Agent ):
         # print(f'ADJ SCORES {sorted_scores}')
         # input()
         self.visited.remove(self.currentTile)
-        self.targetTile = sorted_scores[0][0]
+        if sorted_scores[0][1] == sorted_scores[1][1]:
+            self.targetTile = sorted_scores[random.randint(0,1)][0]
+        elif sorted_scores[0][1] == sorted_scores[1][1] and sorted_scores[0][1] == sorted_scores[2][1]:
+            self.targetTile = sorted_scores[random.randint(0,2)][0]
+        else:
+            self.targetTile = sorted_scores[0][0]
 
     def setTargetTile(self): # set the next Target Tile
         scores = {}
@@ -143,14 +148,12 @@ class MyAI ( Agent ):
         - reward adj tiles, SAFE tiles means surrounding tiles are not wumpus or pit 
     5. if current tile you VISITED before has no senses, subtract 1 from all UNVISITED adj tiles
         - after backtracking to a safe tile, reward adj tiles a little more, promotes exloring new paths
-    6. if current tile you VISITED before has senses, add 1 to all UNVISITED adj tiles
-        - penalize adj tiles a little, emphasizes the fact you probably don't want to go there 
-    7. if any adj tiles around you are VISITED, add 1  
+    6. if any adj tiles around you are VISITED, add 1  
         - penalize visited tiles a little, promotes exploration
-    8. for any adj tile greater than a threshold, give up, go home instead. Helps avoid inifinite LOOPING 
+    7. for any adj tile greater than a threshold, give up, go home instead. Helps avoid inifinite LOOPING 
         - if agent cannot find new path (stuck in a cycle), adj scores will keep increasing, if gets to certain level, just go home. 
-    9. mark current tile as visited 
-    10. whenever you're done visiting current tile, add 2
+    8. mark current tile as visited 
+    9. whenever you're done visiting current tile, add 2
         - penalize visited tiles a little, promotes exploration
 
     '''
