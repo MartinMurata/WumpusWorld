@@ -58,9 +58,12 @@ class MyAI ( Agent ):
         self.shootWumpusState = False
         self.hasArrows = True
         self.wumpusDead = False
+        self.numSteps = 0
         self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
+        if self.currentTile != self.previousTile:
+            self.numSteps += 1
         if self.currentTile == (0,0) and (stench or breeze):
             return Agent.Action.CLIMB
         self.updateWorld( stench, breeze, bump, scream )
@@ -152,7 +155,6 @@ class MyAI ( Agent ):
 
     '''
     def updateWorld(self, stench, breeze, bump, scream):
-        shoot = False
         if self.currentTile == self.targetTile:
             if bump: #current tile is wall
                 self.updateWalls()
@@ -204,13 +206,13 @@ class MyAI ( Agent ):
                 self.shootWumpusState = False
                 self.wumpusDead = True
                 if self.facing == Direction.RIGHT:
-                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 15
+                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 5
                 if self.facing == Direction.LEFT:
-                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 15
+                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 5
                 if self.facing == Direction.UP:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 15
+                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 5
                 if self.facing == Direction.DOWN:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 15
+                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 5
 
             # # if any adj tiles around you are visited, add 1
             for tile in self.adjTiles():
@@ -219,23 +221,16 @@ class MyAI ( Agent ):
 
             # if stuck in loop
             for tile in self.adjTiles():
-                if self.heuristic[tile] >= 15 and tile in self.visited:
+                if self.heuristic[tile] >= 10 and tile in self.visited:
                     # self.heuristic[tile] += 20
                     self.findGoldState = False
                     self.goHomeState = True
 
-            # mark current tile as visited 
-            self.visited.add(self.currentTile)
-            # whenever you visit, add 2
+            # whenever you visit, add 2 ,mark current tile as visited 
             self.heuristic[self.currentTile] += 2
+            self.visited.add(self.currentTile)
 
-            if shoot:
-                print("IMMA SHOOT")
-                input()
-                return Agent.Action.SHOOT
 
-    def shoot(self):
-        return Agent.Action.SHOOT
 
     def moveToTargetTile(self):
         '''update the face and current tile before moving forward'''
