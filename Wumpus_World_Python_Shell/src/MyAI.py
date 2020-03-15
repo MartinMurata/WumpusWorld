@@ -109,7 +109,7 @@ class MyAI ( Agent ):
         for tile in self.adjTiles():
             scores[tile] = 0
             if tile not in self.visited:
-                scores[tile] += 10
+                scores[tile] += 50
             else:
                 scores[tile] = max(tile[0],tile[1])
         sorted_scores = sorted(scores.items(), key=lambda item: item[1])
@@ -197,10 +197,10 @@ class MyAI ( Agent ):
                         self.heuristic[tile] -= 2
 
             # whenever tile you visited before has senses, add 1 to all UNVISITED adj tiles 
-            if self.currentTile in self.visited and (stench or breeze):
-                for tile in self.adjTiles():
-                    if tile not in self.visited:
-                        self.heuristic[tile] += 1
+            # if self.currentTile in self.visited and (stench or breeze):
+            #     for tile in self.adjTiles():
+            #         if tile not in self.visited:
+            #             self.heuristic[tile] += 1
             if scream:
                 # you killed the wumpus, subtract the tile you shot at by 25
                 self.shootWumpusState = False
