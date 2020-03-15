@@ -179,7 +179,7 @@ class MyAI ( Agent ):
             if breeze:
                 for tile in self.adjTiles():
                     if tile not in self.visited:
-                        self.heuristic[tile] += 4
+                        self.heuristic[tile] += 8
             
             if stench and not self.wumpusDead:
                 for tile in self.adjTiles():
