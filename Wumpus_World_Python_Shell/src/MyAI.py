@@ -43,8 +43,6 @@ class Direction(Enum):
     DOWN = "D"
 
 class MyAI ( Agent ):
-    #=============================================================================
-    #=============================================================================
     def __init__ ( self ):
         self.visited = set() #(coordinate:sensors) map of visited tiles (tuple:list)
         self.previousTile = (0,0) 
@@ -56,19 +54,24 @@ class MyAI ( Agent ):
         self.findGoldState = True #1 of two stages agent can be in
         self.goHomeState = False #1 of two stages agent can be in
         self.shootWumpusState = False
+        self.shootCounter = 0
         self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
-        if self.currentTile == (0,0) and (stench or breeze):
+        if self.currentTile == (0,0) and (breeze and not stench):
             return Agent.Action.CLIMB
-        self.updateWorld( stench, breeze, bump, scream )
+
+        self.updateWorld( stench, breeze, bump, scream, glitter)
         if self.findGoldState:
             # print("still finding gold")
             if self.shootWumpusState:
                 self.shootWumpusState = False
+                self.shootCounter += 1
+                print("SHOOT")
                 return Agent.Action.SHOOT
                 
             return self.findingGoldAction(glitter)
+            
         if self.goHomeState:
             # print("already found the gold")
             return self.goHomeAction(stench, breeze, glitter, bump, scream)
@@ -112,6 +115,13 @@ class MyAI ( Agent ):
         self.visited.remove(self.currentTile)
         self.targetTile = sorted_scores[0][0]
 
+    '''
+    def setTargetTileAfterShoot(self):
+        if self.facing == Direction.RIGHT:
+            self.targetTile = self.rightTile()
+        elif 
+    '''
+
     def setTargetTile(self): # set the next Target Tile
         scores = {}
         for tile in self.adjTiles():
@@ -148,8 +158,7 @@ class MyAI ( Agent ):
         - penalize visited tiles a little, promotes exploration
 
     '''
-    def updateWorld(self, stench, breeze, bump, scream):
-        shoot = False
+    def updateWorld(self, stench, breeze, bump, scream, glitter):
         if self.currentTile == self.targetTile:
             if bump: #current tile is wall
                 self.updateWalls()
@@ -177,7 +186,8 @@ class MyAI ( Agent ):
                 for tile in self.adjTiles():
                     if tile not in self.visited:
                         self.heuristic[tile] += 5
-                self.shootWumpusState = True
+                if self.shootCounter <= 1 and not glitter:
+                    self.shootWumpusState = True
 
             # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
             if self.currentTile not in self.visited and not stench and not breeze:
@@ -198,16 +208,14 @@ class MyAI ( Agent ):
                         self.heuristic[tile] += 1
             if scream:
                 # you killed the wumpus, subtract the tile you shot at by 25
-                self.shootWumpusState = False
-
                 if self.facing == Direction.RIGHT:
-                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 15
+                    self.heuristic[self.rightTile()] -= 15
                 if self.facing == Direction.LEFT:
-                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 15
+                    self.heuristic[self.leftTile()] -= 15
                 if self.facing == Direction.UP:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 15
+                    self.heuristic[self.upTile()] -= 15
                 if self.facing == Direction.DOWN:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 15
+                    self.heuristic[self.downTile()] -= 15
 
             # # if any adj tiles around you are visited, add 1
             for tile in self.adjTiles():
@@ -226,10 +234,12 @@ class MyAI ( Agent ):
             # whenever you visit, add 2
             self.heuristic[self.currentTile] += 2
 
+            '''
             if shoot:
                 print("IMMA SHOOT")
                 input()
                 return Agent.Action.SHOOT
+            '''
 
     def shoot(self):
         return Agent.Action.SHOOT
@@ -337,10 +347,10 @@ class MyAI ( Agent ):
         '''return a list of adjTiles'''
         adjT = []
         adjTiles=[
-                (self.currentTile[0]+1,self.currentTile[1]), # right
-                (self.currentTile[0],self.currentTile[1]+1), # up
-                (self.currentTile[0],self.currentTile[1]-1), # down
-                (self.currentTile[0]-1,self.currentTile[1])  # left
+                self.rightTile(), # right
+                self.upTile(), # up
+                self.downTile(), # down
+                self.leftTile()  # left
             ]
 
         for tile in adjTiles: # if it's not in the map
@@ -349,3 +359,15 @@ class MyAI ( Agent ):
                 adjT.append(tile)
 
         return adjT
+    
+    def rightTile(self):
+        return (self.currentTile[0]+1,self.currentTile[1])
+
+    def upTile(self):
+        return (self.currentTile[0],self.currentTile[1]+1)
+
+    def downTile(self):
+        return (self.currentTile[0],self.currentTile[1]-1)
+    
+    def leftTile(self):
+        return (self.currentTile[0]-1,self.currentTile[1])
