@@ -179,7 +179,7 @@ class MyAI ( Agent ):
             if breeze:
                 for tile in self.adjTiles():
                     if tile not in self.visited:
-                        self.heuristic[tile] += 10
+                        self.heuristic[tile] += 8
             
             if stench and not self.wumpusDead:
                 for tile in self.adjTiles():
@@ -209,13 +209,13 @@ class MyAI ( Agent ):
                 self.shootWumpusState = False
                 self.wumpusDead = True
                 if self.facing == Direction.RIGHT:
-                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 5
+                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 10
                 if self.facing == Direction.LEFT:
-                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 5
+                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 10
                 if self.facing == Direction.UP:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 5
+                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 10
                 if self.facing == Direction.DOWN:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 5
+                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 10
 
             # # if any adj tiles around you are visited, add 1
             for tile in self.adjTiles():
@@ -224,7 +224,7 @@ class MyAI ( Agent ):
 
             # if stuck in loop
             for tile in self.adjTiles():
-                if self.heuristic[tile] >= 15 and tile in self.visited:
+                if self.heuristic[tile] >= 20 and tile in self.visited:
                     # self.heuristic[tile] += 20
                     self.findGoldState = False
                     self.goHomeState = True
