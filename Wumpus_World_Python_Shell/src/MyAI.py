@@ -46,9 +46,9 @@ class MyAI ( Agent ):
     #=============================================================================
     #=============================================================================
     def __init__ ( self ):
+        self.safeMap = defaultdict(set)
         self.visited = set() #(coordinate:sensors) map of visited tiles (tuple:list)
         self.previousTile = (0,0) 
-        self.heuristic = {} # for A*, after finding the gold
         self.currentTile = (0,0) # set initial tile
         self.prevFacing = Direction.RIGHT
         self.facing = Direction.RIGHT #set initial direction
@@ -58,13 +58,12 @@ class MyAI ( Agent ):
         self.shootWumpusState = False
         self.hasArrow = True
         self.wumpusDead = False
-        self.numSteps = 0
-        self.possibleMapSize = [7,7] # change it to a list b/c tuple is immutable [col,row]
+        self.possibleMapSize = [8,8] # change it to a list b/c tuple is immutable [col,row]
+        self.startCount = 0
+        self.backtrack = False
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
-        if self.currentTile != self.previousTile:
-            self.numSteps += 1
-        if self.currentTile == (0,0) and (stench or breeze):
+        if self.currentTile == (0,0) and breeze:
             return Agent.Action.CLIMB
         self.updateWorld( stench, breeze, bump, scream )
         if self.findGoldState:
@@ -91,7 +90,7 @@ class MyAI ( Agent ):
             self.hasArrow = False
             self.shootWumpusState = False
             return Agent.Action.SHOOT
-                
+        
         self.setTargetTile()
         return self.moveToTargetTile()
 
@@ -125,18 +124,21 @@ class MyAI ( Agent ):
             self.targetTile = sorted_scores[0][0]
 
     def setTargetTile(self): # set the next Target Tile
-        scores = {}
-        for tile in self.adjTiles():
-            scores[tile] = self.heuristic[tile]
-        sorted_scores = sorted(scores.items(), key=lambda item: item[1])
-        # print(f'ADJ SCORES {sorted_scores}')
-        # input()
-        if sorted_scores[0][1] == sorted_scores[1][1]:
-            self.targetTile = sorted_scores[random.randint(0,1)][0]
-        elif sorted_scores[0][1] == sorted_scores[1][1] and sorted_scores[0][1] == sorted_scores[2][1]:
-            self.targetTile = sorted_scores[random.randint(0,2)][0]
+        # pick a random one that's not visited 
+        if not self.backtrack:
+            notVisitedAdj = [tile for tile in self.safeMap[self.currentTile] if tile not in self.visited]
+            if len(notVisitedAdj) >= 1:
+                #print(f"not visited list {notVisitedAdj}")
+                self.targetTile =  notVisitedAdj[random.randrange(len(notVisitedAdj))]
+            else: # if it's 0
+                self.findGoldState = False
+                self.goHomeState = True
         else:
-            self.targetTile = sorted_scores[0][0]
+            #print("BACKTRACK")
+            # backtrack here
+            self.targetTile = self.previousTile
+            self.backtrack = False
+
     '''
     UpdateWorld Algorithm:
     Assumes the setTarget always chooses the adj tile with the SMALLEST score
@@ -156,84 +158,41 @@ class MyAI ( Agent ):
     8. mark current tile as visited 
     9. whenever you're done visiting current tile, add 2
         - penalize visited tiles a little, promotes exploration
-
     '''
     def updateWorld(self, stench, breeze, bump, scream):
-        if self.currentTile == self.targetTile:
-            if bump: #current tile is wall
-                self.updateWalls()
-                self.currentTile = self.previousTile
-                self.face = self.prevFacing
-                self.setTargetTile()
-                return 
 
-            #initialize current tile not visited before score to 0
-            if self.currentTile not in self.heuristic and self.currentTile not in self.visited:
-                self.heuristic[self.currentTile] = 0
 
-            # initialize adj tiles scores to 0
+        if bump: #current tile is wall
+            self.updateWalls()
+            self.currentTile = self.previousTile
+            self.face = self.prevFacing
+            self.setTargetTile()
+            return 
+
+        if not stench and not breeze: # want to add to okMap
             for tile in self.adjTiles():
-                if tile not in self.heuristic and self.currentTile not in self.visited:
-                    self.heuristic[tile] = 0
+                self.safeMap[self.currentTile].add(tile)
 
-            # whenever breeze or stench, add 3 to all UNVISITED adj tiles 
-            if breeze:
-                for tile in self.adjTiles():
-                    if tile not in self.visited:
-                        self.heuristic[tile] += 10
-            
-            if stench and not self.wumpusDead:
-                for tile in self.adjTiles():
-                    if tile not in self.visited:
-                        self.heuristic[tile] += 5
-                self.shootWumpusState = True
+        if breeze:
+            self.backtrack = True
 
-            # whenever tile you havent visited before has no senses, subtract 3 from all UNVISITED adj tiles 
-            if self.currentTile not in self.visited and not stench and not breeze:
-                for tile in self.adjTiles():
-                    if tile not in self.visited:
-                        self.heuristic[tile] -= 10
 
-            # whenever tile you visited before has no senses, subtract 1 from all UNVISITED adj tiles 
-            if self.currentTile in self.visited and not stench and not breeze:
-                for tile in self.adjTiles():
-                    if tile not in self.visited:
-                        self.heuristic[tile] -= 2
+        if stench:
+            self.shootWumpusState = True # shoot the wumpus
+        
+        if scream and stench and not breeze:
+            self.wumpusDead = True
+            # the one that we facing is now safe, add to okay graph
+        
 
-            # whenever tile you visited before has senses, add 1 to all UNVISITED adj tiles 
-            if self.currentTile in self.visited and (stench or breeze):
-                for tile in self.adjTiles():
-                    if tile not in self.visited:
-                        self.heuristic[tile] -= 2
-            if scream:
-                # you killed the wumpus, subtract the tile you shot at by 25
-                self.shootWumpusState = False
-                self.wumpusDead = True
-                if self.facing == Direction.RIGHT:
-                    self.heuristic[(self.currentTile[0]+1,self.currentTile[1])] -= 10
-                if self.facing == Direction.LEFT:
-                    self.heuristic[(self.currentTile[0]-1,self.currentTile[1])] -= 10
-                if self.facing == Direction.UP:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]+1)] -= 10
-                if self.facing == Direction.DOWN:
-                    self.heuristic[(self.currentTile[0],self.currentTile[1]-1)] -= 10
+        self.visited.add(self.currentTile)
+    
 
-            # # if any adj tiles around you are visited, add 1
-            for tile in self.adjTiles():
-                if tile in self.visited:
-                    self.heuristic[tile] += 1
-
-            # if stuck in loop
-            for tile in self.adjTiles():
-                if self.heuristic[tile] >= 20 and tile in self.visited:
-                    # self.heuristic[tile] += 20
-                    self.findGoldState = False
-                    self.goHomeState = True
-
-            # whenever you visit, add 2 ,mark current tile as visited 
-            self.heuristic[self.currentTile] += 2
-            self.visited.add(self.currentTile)
-
+        # print()
+        # print(f"safeMap {self.safeMap}")
+        # print(f"visited set {self.visited}")
+        # print()
+        # input()
 
 
     def moveToTargetTile(self):
