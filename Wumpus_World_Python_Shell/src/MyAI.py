@@ -60,6 +60,7 @@ class MyAI ( Agent ):
         self.wumpusDead = False
         self.numSteps = 0
         self.possibleMapSize = [7,7] # change it to a list b/c tuple is immutable [col,row]
+        self.startCount = 0
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
         if self.currentTile != self.previousTile:
@@ -158,6 +159,13 @@ class MyAI ( Agent ):
 
     '''
     def updateWorld(self, stench, breeze, bump, scream):
+        if self.startCount >= 10:
+            self.findGoldState = False
+            self.goHomeState = True
+
+        if self.currentTile == (0,0):
+            self.startCount += 1
+
         if self.currentTile == self.targetTile:
             if bump: #current tile is wall
                 self.updateWalls()
