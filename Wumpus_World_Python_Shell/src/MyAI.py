@@ -75,9 +75,6 @@ class MyAI ( Agent ):
             return self.goHomeAction(stench, breeze, glitter, bump, scream)
 
     def findingGoldAction( self, glitter):
-        if self.currentTile != self.targetTile:
-            # print("have to turn again")
-            return self.moveToTargetTile()
         if glitter:  
             # grab that big gold man 
             # print("!!!!!!!!!!!! FOUND THE GOLD !!!!!!!!!!!!")
@@ -85,6 +82,10 @@ class MyAI ( Agent ):
             self.findGoldState = False
             self.goHomeState = True
             return Agent.Action.GRAB
+            
+        if self.currentTile != self.targetTile:
+            # print("have to turn again")
+            return self.moveToTargetTile()
 
         if self.shootWumpusState and self.hasArrow and not self.goHomeState:
             self.hasArrow = False
@@ -348,5 +349,4 @@ class MyAI ( Agent ):
             # possibleMapSize 
             if (0 <= tile[0] < self.possibleMapSize[0] and 0 <= tile[1] < self.possibleMapSize[1]):
                 adjT.append(tile)
-
         return adjT
