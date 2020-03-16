@@ -58,16 +58,15 @@ class MyAI ( Agent ):
         self.possibleMapSize = [100000,100000] # change it to a list b/c tuple is immutable [col,row]
 
     def getAction( self, stench, breeze, glitter, bump, scream ):
-        if self.currentTile == (0,0) and (breeze and not stench):
+        if self.currentTile == (0,0) and (breeze and stench):
             return Agent.Action.CLIMB
 
         self.updateWorld( stench, breeze, bump, scream, glitter)
         if self.findGoldState:
             # print("still finding gold")
-            if self.shootWumpusState:
+            if self.shootWumpusState and not breeze:
                 self.shootWumpusState = False
                 self.shootCounter += 1
-                print("SHOOT")
                 return Agent.Action.SHOOT
                 
             return self.findingGoldAction(glitter)
