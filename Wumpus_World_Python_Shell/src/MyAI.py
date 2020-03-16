@@ -48,7 +48,8 @@ class MyAI ( Agent ):
     def __init__ ( self ):
         self.safeMap = defaultdict(set)
         self.visited = set() #(coordinate:sensors) map of visited tiles (tuple:list)
-        self.previousTile = (0,0) 
+        self.moveStack = []
+        self.previousTile = (0,0)
         self.currentTile = (0,0) # set initial tile
         self.prevFacing = Direction.RIGHT
         self.facing = Direction.RIGHT #set initial direction
@@ -136,7 +137,7 @@ class MyAI ( Agent ):
         else:
             #print("BACKTRACK")
             # backtrack here
-            self.targetTile = self.previousTile
+            self.targetTile = self.moveStack.pop()
             self.backtrack = False
 
     '''
@@ -186,7 +187,7 @@ class MyAI ( Agent ):
         
 
         self.visited.add(self.currentTile)
-    
+        self.moveStack.append(self.currentTile)
 
         # print()
         # print(f"safeMap {self.safeMap}")
