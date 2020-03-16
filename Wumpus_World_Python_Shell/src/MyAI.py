@@ -159,7 +159,7 @@ class MyAI ( Agent ):
 
     '''
     def updateWorld(self, stench, breeze, bump, scream):
-        if self.startCount >= 10: #7:160
+        if self.startCount >= 7: #7:160
             self.findGoldState = False
             self.goHomeState = True
 
