@@ -159,7 +159,7 @@ class MyAI ( Agent ):
 
     '''
     def updateWorld(self, stench, breeze, bump, scream):
-        if self.startCount >= 10:
+        if self.startCount >= 10: #7:160
             self.findGoldState = False
             self.goHomeState = True
 
@@ -240,8 +240,6 @@ class MyAI ( Agent ):
             # whenever you visit, add 2 ,mark current tile as visited 
             self.heuristic[self.currentTile] += 2
             self.visited.add(self.currentTile)
-
-
 
     def moveToTargetTile(self):
         '''update the face and current tile before moving forward'''
